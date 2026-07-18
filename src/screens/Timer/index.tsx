@@ -7,6 +7,8 @@ import { WeeklyBarChart } from "./WeeklyBarChart";
 export function Timer() {
   const subjects = useAppStore((s) => s.subjects);
   const timer = useAppStore((s) => s.timer);
+  const weekStats = useAppStore((s) => s.weekStats);
+  const isParent = useAppStore((s) => s.user?.role === "parent");
   const now = useNow(timer.runningSubject != null);
   const elapsed = runningElapsedSec(timer, now);
 
@@ -25,9 +27,13 @@ export function Timer() {
           totalSec={totalTodaySec}
           activeSubject={liveSubjects.find((s) => s.name === timer.runningSubject) ?? null}
         />
-        <WeeklyBarChart subjects={liveSubjects} totalTodaySec={totalTodaySec} />
+        <WeeklyBarChart subjects={liveSubjects} totalTodaySec={totalTodaySec} weekStats={weekStats} />
       </div>
-      <SubjectTimerList subjects={liveSubjects} runningSubject={timer.runningSubject} />
+      <SubjectTimerList
+        subjects={liveSubjects}
+        runningSubject={timer.runningSubject}
+        disabled={isParent}
+      />
     </div>
   );
 }

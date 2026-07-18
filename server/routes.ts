@@ -1,0 +1,166 @@
+import { Hono } from "hono";
+import type { AuthUser } from "./auth";
+import { q } from "./db";
+
+type Env = { Variables: { user: AuthUser } };
+
+export const api = new Hono<Env>();
+
+/** 이번 주 월요일 00:00 (서버 로컬 TZ = KST 전제, plan §리스크) */
+function mondayStart(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+function todayStart(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// ---- bootstrap: 로그인 후 초기 데이터 일괄 조회 ----
+api.get("/bootstrap", async (c) => {
+  const monday = mondayStart();
+  const today = todayStart();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+  const subjects = await q<{ name: string; color: string; today_sec: number; week_sec: number }>(
+    `SELECT s.name, s.color,
+       COALESCE(SUM(EXTRACT(EPOCH FROM (t.ended_at - t.started_at))) FILTER (WHERE t.started_at >= $1), 0)::float AS today_sec,
+       COALESCE(SUM(EXTRACT(EPOCH FROM (t.ended_at - t.started_at))) FILTER (WHERE t.started_at >= $2), 0)::float AS week_sec
+     FROM subjects s LEFT JOIN timer_sessions t ON t.subject = s.name
+     GROUP BY s.name, s.color, s.sort ORDER BY s.sort`,
+    [today, monday],
+  );
+
+  const todos = await q<Record<string, unknown>>(
+    `SELECT id, title, prio, source, done, due_at FROM todos
+     WHERE deleted_at IS NULL ORDER BY created_at DESC`,
+  );
+  const subs = await q<{ id: string; todo_id: string; title: string; done: boolean }>(
+    `SELECT st.id, st.todo_id, st.title, st.done FROM todo_subtasks st
+     JOIN todos t ON t.id = st.todo_id WHERE t.deleted_at IS NULL ORDER BY st.sort`,
+  );
+
+  const plan = await q(
+    "SELECT id, subject, goal_min, memo, done FROM plan_items ORDER BY sort",
+  );
+  const timetable = await q(
+    "SELECT subject, start_h::float AS start, end_h::float AS \"end\" FROM timetable_blocks ORDER BY start_h",
+  );
+  const events = await q(
+    `SELECT id, title, type, start_at FROM calendar_events
+     WHERE deleted_at IS NULL AND start_at >= $1 AND start_at < $2 ORDER BY start_at`,
+    [monthStart, nextMonth],
+  );
+  const memos = await q(
+    "SELECT id, folder, color, text, image, done FROM memos WHERE deleted_at IS NULL ORDER BY created_at DESC",
+  );
+  const weekRows = await q<{ dow: number; sec: number }>(
+    `SELECT EXTRACT(ISODOW FROM started_at)::int - 1 AS dow,
+            SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))::float AS sec
+     FROM timer_sessions WHERE started_at >= $1 GROUP BY 1`,
+    [monday],
+  );
+  const weekStats = [0, 0, 0, 0, 0, 0, 0];
+  for (const r of weekRows) weekStats[r.dow] = r.sec;
+
+  return c.json({
+    user: c.get("user"),
+    subjects: subjects.map((s) => ({ name: s.name, color: s.color, todaySec: Math.round(s.today_sec), weekSec: Math.round(s.week_sec) })),
+    todos: todos.map((t) => ({
+      id: t.id, title: t.title, prio: t.prio, source: t.source, done: t.done,
+      dueAt: t.due_at, subOpen: false,
+      subs: subs.filter((s) => s.todo_id === t.id).map((s) => ({ id: s.id, title: s.title, done: s.done })),
+    })),
+    plan: plan.map((p) => ({ id: p.id, subject: p.subject, goal: p.goal_min, memo: p.memo, done: p.done })),
+    timetable,
+    events: events.map((e) => ({ id: e.id, title: e.title, type: e.type, startAt: e.start_at })),
+    memos,
+    weekStats: weekStats.map(Math.round),
+  });
+});
+
+// ---- todos ----
+api.post("/todos", async (c) => {
+  const b = await c.req.json();
+  const [t] = await q<{ id: string }>(
+    "INSERT INTO todos (title, prio, source, done, due_at) VALUES ($1,$2,$3,false,$4) RETURNING id",
+    [b.title ?? "새 숙제", b.prio ?? "mid", b.source ?? "기타", b.dueAt ?? null],
+  );
+  const subs: Array<{ id: string; title: string; done: boolean }> = [];
+  const titles: string[] = Array.isArray(b.subs) ? b.subs : [];
+  for (let i = 0; i < titles.length; i++) {
+    const [s] = await q<{ id: string }>(
+      "INSERT INTO todo_subtasks (todo_id, title, sort) VALUES ($1,$2,$3) RETURNING id",
+      [t.id, titles[i], i],
+    );
+    subs.push({ id: s.id, title: titles[i], done: false });
+  }
+  return c.json({ id: t.id, subs });
+});
+
+api.patch("/todos/:id", async (c) => {
+  const b = await c.req.json();
+  if (typeof b.done === "boolean") {
+    await q("UPDATE todos SET done=$1, version=version+1, updated_at=NOW() WHERE id=$2", [b.done, c.req.param("id")]);
+  }
+  return c.json({ ok: true });
+});
+
+api.patch("/todos/:id/subtasks/:sid", async (c) => {
+  const b = await c.req.json();
+  await q("UPDATE todo_subtasks SET done=$1 WHERE id=$2 AND todo_id=$3", [
+    !!b.done, c.req.param("sid"), c.req.param("id"),
+  ]);
+  return c.json({ ok: true });
+});
+
+api.delete("/todos/:id", async (c) => {
+  await q("UPDATE todos SET deleted_at=NOW() WHERE id=$1", [c.req.param("id")]);
+  return c.json({ ok: true });
+});
+
+// ---- plan ----
+api.patch("/plan/:id", async (c) => {
+  const b = await c.req.json();
+  await q("UPDATE plan_items SET done=$1 WHERE id=$2", [!!b.done, c.req.param("id")]);
+  return c.json({ ok: true });
+});
+
+// ---- memos ----
+api.post("/memos", async (c) => {
+  const b = await c.req.json();
+  const [m] = await q<{ id: string }>(
+    "INSERT INTO memos (folder, color, text, image) VALUES ($1,$2,$3,$4) RETURNING id",
+    [b.folder ?? "아이디어", b.color ?? "#fef9c3", b.text ?? "", b.image ?? null],
+  );
+  return c.json({ id: m.id });
+});
+
+api.patch("/memos/:id", async (c) => {
+  const b = await c.req.json();
+  await q("UPDATE memos SET done=$1 WHERE id=$2", [!!b.done, c.req.param("id")]);
+  return c.json({ ok: true });
+});
+
+api.delete("/memos/:id", async (c) => {
+  await q("UPDATE memos SET deleted_at=NOW() WHERE id=$1", [c.req.param("id")]);
+  return c.json({ ok: true });
+});
+
+// ---- timer (학생만 — spec R-15) ----
+api.post("/timer/sessions", async (c) => {
+  const user = c.get("user");
+  if (user.role !== "student") return c.json({ error: "학생 계정만 타이머를 기록할 수 있습니다" }, 403);
+  const b = await c.req.json();
+  const started = new Date(b.startedAt);
+  const ended = new Date(b.endedAt);
+  if (!(started.getTime() < ended.getTime())) return c.json({ error: "invalid range" }, 400);
+  await q("INSERT INTO timer_sessions (user_id, subject, started_at, ended_at) VALUES ($1,$2,$3,$4)", [
+    user.id, b.subject, started, ended,
+  ]);
+  return c.json({ ok: true });
+});

@@ -19,12 +19,12 @@ export function PlanChecklist() {
         </div>
       </div>
       <div className="flex flex-col gap-2 lg:gap-2.5">
-        {plan.map((p, i) => {
+        {plan.map((p) => {
           const color = subjectColor(subjects, p.subject);
           return (
             <button
-              key={i}
-              onClick={() => togglePlan(i)}
+              key={p.id}
+              onClick={() => togglePlan(p.id)}
               className="flex min-h-[52px] items-center gap-3 rounded-xl bg-slate-50 p-3 text-left lg:gap-[13px] lg:p-3.5"
               style={{ opacity: p.done ? 0.55 : 1 }}
             >

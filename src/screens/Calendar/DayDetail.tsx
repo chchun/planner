@@ -1,9 +1,9 @@
 import { CalendarIcon } from "../../components/icons";
-import { MOCK_TODAY } from "../../data/mock";
-import type { CalendarEvent } from "../../data/types";
+import { getToday } from "../../lib/date";
+import type { DayEvent } from "../../data/types";
 import { useAppStore } from "../../store/useAppStore";
 
-function detailItems(events: Record<number, CalendarEvent[]>, day: number) {
+function detailItems(events: Record<number, DayEvent[]>, day: number) {
   return (events[day] ?? []).map((e) => ({
     ...e,
     color: e.type === "hw" ? "#f97316" : "#3b82f6",
@@ -43,7 +43,7 @@ function DetailList({ items }: { items: ReturnType<typeof detailItems> }) {
 }
 
 /** iPad·PC 월간 뷰의 우측 상세 패널 */
-export function DayDetailPanel({ events }: { events: Record<number, CalendarEvent[]> }) {
+export function DayDetailPanel({ events }: { events: Record<number, DayEvent[]> }) {
   const selectedDate = useAppStore((s) => s.selectedDate);
 
   return (
@@ -56,7 +56,7 @@ export function DayDetailPanel({ events }: { events: Record<number, CalendarEven
       ) : (
         <div>
           <div className="text-lg font-extrabold text-slate-900">
-            {MOCK_TODAY.month}월 {selectedDate}일
+            {getToday().month}월 {selectedDate}일
           </div>
           <div className="mb-[18px] mt-[3px] text-[13px] font-semibold text-slate-400">
             {(events[selectedDate] ?? []).length}개의 일정 · 시간순
@@ -69,7 +69,7 @@ export function DayDetailPanel({ events }: { events: Record<number, CalendarEven
 }
 
 /** 모바일 월간 뷰의 날짜 상세 바텀 시트 */
-export function DayBottomSheet({ events }: { events: Record<number, CalendarEvent[]> }) {
+export function DayBottomSheet({ events }: { events: Record<number, DayEvent[]> }) {
   const selectedDate = useAppStore((s) => s.selectedDate);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
   if (selectedDate == null) return null;
@@ -83,7 +83,7 @@ export function DayBottomSheet({ events }: { events: Record<number, CalendarEven
       <div className="fixed inset-x-0 bottom-0 z-40 max-h-[60%] animate-sheetUp overflow-y-auto rounded-t-3xl bg-white px-5 pb-7 pt-2 shadow-sheet">
         <div className="mx-auto mb-4 mt-1.5 h-1 w-10 rounded-full bg-slate-200" />
         <div className="mb-1 text-[17px] font-extrabold text-slate-900">
-          {MOCK_TODAY.month}월 {selectedDate}일
+          {getToday().month}월 {selectedDate}일
         </div>
         <div className="mb-3.5 text-xs font-semibold text-slate-400">
           {(events[selectedDate] ?? []).length}개의 일정 · 시간순

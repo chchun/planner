@@ -3,7 +3,15 @@ import { fmtHM, fmtHMS } from "../../lib/time";
 import type { Subject } from "../../data/types";
 import { useAppStore } from "../../store/useAppStore";
 
-function SubjectTimerRow({ subject, active }: { subject: Subject; active: boolean }) {
+function SubjectTimerRow({
+  subject,
+  active,
+  disabled,
+}: {
+  subject: Subject;
+  active: boolean;
+  disabled?: boolean;
+}) {
   const toggleTimer = useAppStore((s) => s.toggleTimer);
   return (
     <div
@@ -31,8 +39,9 @@ function SubjectTimerRow({ subject, active }: { subject: Subject; active: boolea
       </div>
       <button
         onClick={() => toggleTimer(subject.name)}
+        disabled={disabled}
         aria-label={active ? `${subject.name} 타이머 정지` : `${subject.name} 타이머 시작`}
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full lg:h-[46px] lg:w-[46px] ${
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-40 lg:h-[46px] lg:w-[46px] ${
           active ? "animate-ringPulse" : ""
         }`}
         style={{ background: active ? subject.color : "#e2e8f0" }}
@@ -46,18 +55,28 @@ function SubjectTimerRow({ subject, active }: { subject: Subject; active: boolea
 export function SubjectTimerList({
   subjects,
   runningSubject,
+  disabled,
 }: {
   subjects: Subject[];
   runningSubject: string | null;
+  disabled?: boolean;
 }) {
   return (
     <section className="rounded-card border border-slate-100 bg-white p-4 shadow-card lg:p-5">
-      <div className="mb-3 text-[15px] font-extrabold text-slate-900 lg:mb-4 lg:text-base">
-        과목별 타이머
+      <div className="mb-3 flex items-center justify-between lg:mb-4">
+        <div className="text-[15px] font-extrabold text-slate-900 lg:text-base">과목별 타이머</div>
+        {disabled && (
+          <div className="text-[11px] font-bold text-slate-400">학생 계정만 기록할 수 있어요</div>
+        )}
       </div>
       <div className="flex flex-col gap-2.5 lg:gap-3">
         {subjects.map((s) => (
-          <SubjectTimerRow key={s.name} subject={s} active={runningSubject === s.name} />
+          <SubjectTimerRow
+            key={s.name}
+            subject={s}
+            active={runningSubject === s.name}
+            disabled={disabled}
+          />
         ))}
       </div>
     </section>

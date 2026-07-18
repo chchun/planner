@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BellIcon, CloseIcon, ErrorCircleIcon, PlusIcon, TrashIcon } from "./icons";
-import { registerTags } from "../data/mock";
+import { registerTags } from "../data/constants";
 import type { NotifSettings, RegisterFormValues } from "../data/types";
 import { useAppStore } from "../store/useAppStore";
 
@@ -20,25 +20,30 @@ const INITIAL_FORM: RegisterFormValues = {
 
 /** 공용 등록 폼 — iPad·PC 다이얼로그와 모바일 바텀시트가 같은 폼을 감싼다 */
 function RegisterForm({ onClose }: { onClose: () => void }) {
-  const addTodo = useAppStore((s) => s.addTodo);
+  const createTodo = useAppStore((s) => s.createTodo);
   const [form, setForm] = useState<RegisterFormValues>(INITIAL_FORM);
   const [dueError, setDueError] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.due) {
       setDueError(true);
       return;
     }
-    addTodo({
-      id: Date.now(),
-      title: form.title.trim() || "새 숙제",
-      prio: "mid",
-      source: form.tag ?? "기타",
-      done: false,
-      subOpen: false,
-      subs: form.subs.filter((t) => t.trim()).map((t) => ({ title: t.trim(), done: false })),
-    });
-    onClose();
+    setSaving(true);
+    try {
+      await createTodo({
+        title: form.title.trim() || "새 숙제",
+        source: form.tag ?? "기타",
+        dueAt: new Date(form.due).toISOString(),
+        subs: form.subs.filter((t) => t.trim()).map((t) => t.trim()),
+      });
+      onClose();
+    } catch (err) {
+      console.error("[api]", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -181,10 +186,11 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
 
       <div className="shrink-0 border-t border-slate-100 px-[22px] pb-[22px] pt-3">
         <button
-          onClick={handleSave}
-          className="w-full rounded-[14px] bg-brand p-[15px] text-[15px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(79,70,229,0.5)] hover:bg-brand-hover"
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="w-full rounded-[14px] bg-brand p-[15px] text-[15px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(79,70,229,0.5)] hover:bg-brand-hover disabled:opacity-60"
         >
-          저장하기
+          {saving ? "저장 중…" : "저장하기"}
         </button>
       </div>
     </div>

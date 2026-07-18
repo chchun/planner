@@ -1,6 +1,5 @@
-import { MOCK_TODAY } from "../../data/mock";
-import type { CalendarEvent } from "../../data/types";
-import { dayOfWeek, monthGridCells, WEEKDAY_LABELS } from "../../lib/date";
+import type { DayEvent } from "../../data/types";
+import { dayOfWeek, getToday, monthGridCells, WEEKDAY_LABELS } from "../../lib/date";
 import { useAppStore } from "../../store/useAppStore";
 
 export function MonthGrid({
@@ -8,7 +7,7 @@ export function MonthGrid({
   filterSched,
   filterHw,
 }: {
-  events: Record<number, CalendarEvent[]>;
+  events: Record<number, DayEvent[]>;
   filterSched: boolean;
   filterHw: boolean;
 }) {
@@ -35,7 +34,7 @@ export function MonthGrid({
           const evs = events[n] ?? [];
           const hasSched = filterSched && evs.some((e) => e.type === "sched");
           const hasHw = filterHw && evs.some((e) => e.type === "hw");
-          const isToday = n === MOCK_TODAY.day;
+          const isToday = n === getToday().day;
           const isSel = selectedDate === n;
           const dow = dayOfWeek(n);
           let color = "#334155";

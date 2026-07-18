@@ -70,13 +70,13 @@ function TodoItem({ todo }: { todo: Todo }) {
       </div>
       {todo.subOpen && todo.subs.length > 0 && (
         <div className="flex animate-acc flex-col gap-2 px-3.5 pb-3 pl-12 pt-0.5">
-          {todo.subs.map((s, i) => (
+          {todo.subs.map((s) => (
             <button
-              key={i}
-              onClick={() => toggleSubtask(todo.id, i)}
+              key={s.id}
+              onClick={() => toggleSubtask(todo.id, s.id)}
               className="flex min-h-[28px] items-center gap-[9px] text-left"
             >
-              <Checkbox small done={s.done} onToggle={() => toggleSubtask(todo.id, i)} />
+              <Checkbox small done={s.done} onToggle={() => toggleSubtask(todo.id, s.id)} />
               <span
                 className="text-[13px] text-slate-600"
                 style={{

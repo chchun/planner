@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HEADER_DATE } from "../data/mock";
+import { headerDateLabel } from "../lib/date";
 import type { Tab } from "../data/types";
 import { useAppStore } from "../store/useAppStore";
 import {
@@ -92,16 +92,31 @@ function Sidebar() {
         <PlusIcon size={18} />
         <span>새 숙제 등록</span>
       </button>
-      <div className="flex items-center gap-2.5 p-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-brand text-[15px] font-extrabold text-white">
-          민
-        </div>
-        <div>
-          <div className="text-sm font-bold text-slate-800">김민준</div>
-          <div className="text-xs font-semibold text-slate-400">고등학교 2학년</div>
-        </div>
-      </div>
+      <UserProfileRow />
     </aside>
+  );
+}
+
+function UserProfileRow() {
+  const user = useAppStore((s) => s.user);
+  const logout = useAppStore((s) => s.logout);
+  if (!user) return null;
+  return (
+    <div className="flex items-center gap-2.5 p-2">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-brand text-[15px] font-extrabold text-white">
+        {user.displayName.slice(-2, -1) || user.displayName[0]}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-bold text-slate-800">{user.displayName}</div>
+        <div className="truncate text-xs font-semibold text-slate-400">{user.gradeLabel}</div>
+      </div>
+      <button
+        onClick={() => void logout()}
+        className="shrink-0 rounded-lg px-2 py-1.5 text-[11px] font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+      >
+        로그아웃
+      </button>
+    </div>
   );
 }
 
@@ -142,11 +157,13 @@ function MobileTabBar() {
 function MobileHeader() {
   const activeTab = useAppStore((s) => s.activeTab);
   const openModal = useAppStore((s) => s.openModal);
+  const user = useAppStore((s) => s.user);
+  const logout = useAppStore((s) => s.logout);
   return (
     <header className="sticky top-0 z-20 border-b border-slate-100 bg-white px-5 pb-3.5 pt-4 lg:hidden">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-xs font-semibold text-slate-400">{HEADER_DATE}</div>
+          <div className="text-xs font-semibold text-slate-400">{headerDateLabel()}</div>
           <div className="mt-0.5 text-[21px] font-extrabold tracking-tight text-slate-900">
             {PHONE_TITLES[activeTab]}
           </div>
@@ -159,9 +176,15 @@ function MobileHeader() {
           >
             <PlusIcon size={20} />
           </button>
-          <div className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-brand text-[15px] font-extrabold text-white">
-            민
-          </div>
+          <button
+            onClick={() => {
+              if (window.confirm("로그아웃할까요?")) void logout();
+            }}
+            aria-label="로그아웃"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-brand text-[15px] font-extrabold text-white"
+          >
+            {user ? user.displayName.slice(-2, -1) || user.displayName[0] : ""}
+          </button>
         </div>
       </div>
     </header>
@@ -173,7 +196,7 @@ function DesktopHeader() {
   return (
     <header className="hidden items-end justify-between px-8 pb-[18px] pt-[26px] lg:flex">
       <div>
-        <div className="text-[13px] font-bold text-slate-400">{HEADER_DATE}</div>
+        <div className="text-[13px] font-bold text-slate-400">{headerDateLabel()}</div>
         <div className="mt-[3px] text-[26px] font-extrabold tracking-tight text-slate-900">
           {PAD_TITLES[activeTab]}
         </div>

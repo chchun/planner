@@ -1,10 +1,10 @@
 import { useState, type ChangeEvent } from "react";
 import { ImageIcon } from "../../components/icons";
-import { memoSwatches } from "../../data/mock";
+import { memoSwatches } from "../../data/constants";
 import { useAppStore } from "../../store/useAppStore";
 
 export function MemoComposer({ folders }: { folders: string[] }) {
-  const addMemo = useAppStore((s) => s.addMemo);
+  const createMemo = useAppStore((s) => s.createMemo);
   const [text, setText] = useState("");
   const [color, setColor] = useState(memoSwatches[0]);
   const [folder, setFolder] = useState("아이디어");
@@ -21,9 +21,9 @@ export function MemoComposer({ folders }: { folders: string[] }) {
     e.target.value = "";
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!text.trim() && !image) return;
-    addMemo({ id: Date.now(), folder, color, text: text.trim(), image, done: false });
+    await createMemo({ folder, color, text: text.trim(), image });
     setText("");
     setImage(null);
   };
@@ -89,7 +89,7 @@ export function MemoComposer({ folders }: { folders: string[] }) {
             <input type="file" accept="image/*" onChange={onPickImage} className="hidden" />
           </label>
           <button
-            onClick={submit}
+            onClick={() => void submit()}
             className="min-h-[40px] flex-1 rounded-chip bg-brand px-5 py-2 text-[13px] font-extrabold text-white hover:bg-brand-hover lg:flex-none"
           >
             추가

@@ -1,4 +1,4 @@
-import { weekPastHours, WEEK_TODAY_INDEX } from "../../data/mock";
+import { mondayIndexOfToday } from "../../lib/date";
 import { fmtHM } from "../../lib/time";
 import type { Subject } from "../../data/types";
 
@@ -8,15 +8,17 @@ const MAX_BAR_PX = 120;
 export function WeeklyBarChart({
   subjects,
   totalTodaySec,
+  weekStats,
 }: {
   subjects: Subject[];
   totalTodaySec: number;
+  weekStats: number[];
 }) {
-  const todayH = totalTodaySec / 3600;
-  const hours = DAY_LABELS.map((_, i) => {
-    if (i === WEEK_TODAY_INDEX) return todayH;
-    return weekPastHours[i] ?? 0;
-  });
+  const todayIdx = mondayIndexOfToday();
+  // 서버 집계(월~일 초) 기준, 오늘은 실행 중 경과 포함 라이브 값으로 대체
+  const hours = DAY_LABELS.map((_, i) =>
+    i === todayIdx ? totalTodaySec / 3600 : (weekStats[i] ?? 0) / 3600,
+  );
   const maxH = Math.max(4, ...hours);
   const weekTotalSec = subjects.reduce((a, s) => a + s.weekSec, 0);
 
@@ -30,7 +32,7 @@ export function WeeklyBarChart({
       </div>
       <div className="flex h-[120px] items-end justify-between gap-1.5 lg:h-[150px] lg:gap-2.5">
         {hours.map((v, i) => {
-          const isToday = i === WEEK_TODAY_INDEX;
+          const isToday = i === todayIdx;
           const labelColor = isToday ? "#4f46e5" : "#94a3b8";
           return (
             <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5 lg:gap-2">

@@ -1,7 +1,7 @@
-import { MOCK_TODAY } from "../../data/mock";
-import { repo } from "../../data/repository";
+import { getToday, currentWeekDays } from "../../lib/date";
+import { pad2 } from "../../lib/time";
+import type { DayEvent } from "../../data/types";
 import { useAppStore } from "../../store/useAppStore";
-import { currentWeekDays } from "../../lib/date";
 import { MonthGrid } from "./MonthGrid";
 import { WeekGrid } from "./WeekGrid";
 import { DayDetailPanel, DayBottomSheet } from "./DayDetail";
@@ -37,13 +37,28 @@ export function Calendar() {
   const filterHw = useAppStore((s) => s.filterHw);
   const toggleFilterSched = useAppStore((s) => s.toggleFilterSched);
   const toggleFilterHw = useAppStore((s) => s.toggleFilterHw);
-  const events = repo.getEvents();
+  const rawEvents = useAppStore((s) => s.events);
+
+  // 서버 이벤트(TIMESTAMPTZ) → 이번 달 일(day) 기준 맵으로 변환
+  const today = getToday();
+  const events: Record<number, DayEvent[]> = {};
+  for (const e of rawEvents) {
+    const d = new Date(e.startAt);
+    if (d.getFullYear() !== today.year || d.getMonth() + 1 !== today.month) continue;
+    const day = d.getDate();
+    (events[day] ??= []).push({
+      time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+      title: e.title,
+      type: e.type,
+    });
+  }
+  for (const list of Object.values(events)) list.sort((a, b) => a.time.localeCompare(b.time));
 
   const week = currentWeekDays();
   const rangeLabel =
     calMode === "month"
-      ? `${MOCK_TODAY.year}년 ${MOCK_TODAY.month}월`
-      : `${MOCK_TODAY.month}월 ${week[0]}일 - ${week[6]}일`;
+      ? `${today.year}년 ${today.month}월`
+      : `${today.month}월 ${week[0]}일 - ${week[week.length - 1]}일`;
 
   return (
     <div

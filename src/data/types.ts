@@ -1,5 +1,13 @@
 export type Tab = "dashboard" | "planner" | "timer" | "calendar" | "memo";
 
+export interface User {
+  id: string;
+  username: string;
+  displayName: string;
+  role: "student" | "parent";
+  gradeLabel: string;
+}
+
 export interface Subject {
   name: string;
   color: string;
@@ -12,16 +20,19 @@ export interface Subject {
 export type Priority = "high" | "mid" | "low";
 
 export interface Subtask {
+  id: string;
   title: string;
   done: boolean;
 }
 
 export interface Todo {
-  id: number;
+  id: string;
   title: string;
   prio: Priority;
   source: string;
   done: boolean;
+  /** ISO — 납기. 마감 임박/이월 위젯이 여기서 파생된다 (spec 002 R-13) */
+  dueAt: string | null;
   subOpen: boolean;
   subs: Subtask[];
 }
@@ -42,6 +53,7 @@ export interface TimelineItem {
 }
 
 export interface PlanItem {
+  id: string;
   subject: string;
   /** 목표 시간(분) */
   goal: number;
@@ -59,17 +71,25 @@ export interface TimetableBlock {
 export type EventType = "sched" | "hw";
 
 export interface CalendarEvent {
+  id: string;
+  title: string;
+  type: EventType;
+  /** ISO */
+  startAt: string;
+}
+
+/** 캘린더 화면용 — 일(day) 기준으로 정리된 이벤트 */
+export interface DayEvent {
   time: string;
   title: string;
   type: EventType;
 }
 
 export interface Memo {
-  id: number;
+  id: string;
   folder: string;
   color: string;
   text: string;
-  /** dataURL — 이미지가 있을 때만 */
   image: string | null;
   done: boolean;
 }
@@ -91,6 +111,17 @@ export interface RegisterFormValues {
 /** 타이머는 interval 카운트가 아니라 시작 시각 기반으로 계산한다 (constitution §4) */
 export interface TimerState {
   runningSubject: string | null;
-  /** Date.now() 기준 시작 시각 — 실행 중일 때만 존재 */
   startedAt: number | null;
+}
+
+export interface BootstrapData {
+  user: User;
+  subjects: Subject[];
+  todos: Todo[];
+  plan: PlanItem[];
+  timetable: TimetableBlock[];
+  events: CalendarEvent[];
+  memos: Memo[];
+  /** 월~일 초 단위 타이머 집계 */
+  weekStats: number[];
 }

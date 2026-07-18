@@ -1,8 +1,7 @@
-import { MOCK_TODAY } from "../../data/mock";
-import type { CalendarEvent } from "../../data/types";
-import { currentWeekDays, dayOfWeek, WEEKDAY_LABELS } from "../../lib/date";
+import type { DayEvent } from "../../data/types";
+import { currentWeekDays, dayOfWeek, getToday, WEEKDAY_LABELS } from "../../lib/date";
 
-const EVENT_COLOR: Record<CalendarEvent["type"], string> = {
+const EVENT_COLOR: Record<DayEvent["type"], string> = {
   sched: "#3b82f6",
   hw: "#f97316",
 };
@@ -16,7 +15,7 @@ export function WeekGrid({
   filterSched,
   filterHw,
 }: {
-  events: Record<number, CalendarEvent[]>;
+  events: Record<number, DayEvent[]>;
   filterSched: boolean;
   filterHw: boolean;
 }) {
@@ -25,7 +24,7 @@ export function WeekGrid({
     const items = (events[n] ?? []).filter(
       (e) => (e.type === "sched" && filterSched) || (e.type === "hw" && filterHw),
     );
-    return { n, dow, items, isToday: n === MOCK_TODAY.day };
+    return { n, dow, items, isToday: n === getToday().day };
   });
 
   return (

@@ -1,5 +1,5 @@
 import { CheckIcon, TrashIcon } from "../../components/icons";
-import { memoAccentMap } from "../../data/mock";
+import { memoAccentMap } from "../../data/constants";
 import type { Memo } from "../../data/types";
 import { useAppStore } from "../../store/useAppStore";
 

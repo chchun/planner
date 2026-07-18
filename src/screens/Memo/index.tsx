@@ -1,5 +1,5 @@
 import { GridIcon, ListIcon } from "../../components/icons";
-import { repo } from "../../data/repository";
+import { memoFolders } from "../../data/constants";
 import { useAppStore } from "../../store/useAppStore";
 import { MemoComposer } from "./MemoComposer";
 import { MemoCard, MemoRow } from "./MemoItem";
@@ -10,7 +10,7 @@ export function MemoBoard() {
   const setMemoView = useAppStore((s) => s.setMemoView);
   const currentFolder = useAppStore((s) => s.currentFolder);
   const setCurrentFolder = useAppStore((s) => s.setCurrentFolder);
-  const folders = repo.getMemoFolders();
+  const folders = memoFolders;
 
   const filtered = memos.filter((m) => currentFolder === "전체" || m.folder === currentFolder);
 
