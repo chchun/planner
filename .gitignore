@@ -1,10 +1,18 @@
+# dependencies / build
 node_modules/
 dist/
-*.local
-.DS_Store
-data/
+
+# PGlite 로컬 DB (루트 전용 — src/data 는 제외하지 않는다)
+/data/
+
+# 로그 / 임시
 server.log
 cookies.txt
 pcookies.txt
+*.local
+.DS_Store
+
+# 비밀값 — 절대 커밋 금지
 .env
+.env.bak
 *service-account*.json
