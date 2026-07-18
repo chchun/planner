@@ -76,6 +76,8 @@ export interface CalendarEvent {
   type: EventType;
   /** ISO */
   startAt: string;
+  /** 출처 — local | google-family | google-student (spec 004) */
+  source?: string;
 }
 
 /** 캘린더 화면용 — 일(day) 기준으로 정리된 이벤트 */

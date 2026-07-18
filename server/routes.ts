@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { AuthUser } from "./auth";
 import { q } from "./db";
+import { listGoogleEvents } from "./google";
+import { deleteTodoEvent, pushTodoEvent } from "./gsync";
 
 type Env = { Variables: { user: AuthUser } };
 
@@ -55,6 +57,8 @@ api.get("/bootstrap", async (c) => {
      WHERE deleted_at IS NULL AND start_at >= $1 AND start_at < $2 ORDER BY start_at`,
     [monthStart, nextMonth],
   );
+  // 구글 캘린더(가족일정·시윤학원) 병합 — 실패 시 빈 배열 (spec 004 R-33)
+  const googleEvents = await listGoogleEvents(monthStart, nextMonth);
   const memos = await q(
     "SELECT id, folder, color, text, image, done FROM memos WHERE deleted_at IS NULL ORDER BY created_at DESC",
   );
@@ -77,7 +81,10 @@ api.get("/bootstrap", async (c) => {
     })),
     plan: plan.map((p) => ({ id: p.id, subject: p.subject, goal: p.goal_min, memo: p.memo, done: p.done })),
     timetable,
-    events: events.map((e) => ({ id: e.id, title: e.title, type: e.type, startAt: e.start_at })),
+    events: [
+      ...events.map((e) => ({ id: e.id, title: e.title, type: e.type, startAt: e.start_at, source: "local" })),
+      ...googleEvents.map((e) => ({ id: e.id, title: e.title, type: "sched", startAt: e.startAt, source: e.source })),
+    ],
     memos,
     weekStats: weekStats.map(Math.round),
   });
@@ -86,10 +93,14 @@ api.get("/bootstrap", async (c) => {
 // ---- todos ----
 api.post("/todos", async (c) => {
   const b = await c.req.json();
+  const title: string = b.title ?? "새 숙제";
+  const dueAt: string | null = b.dueAt ?? null;
   const [t] = await q<{ id: string }>(
-    "INSERT INTO todos (title, prio, source, done, due_at) VALUES ($1,$2,$3,false,$4) RETURNING id",
-    [b.title ?? "새 숙제", b.prio ?? "mid", b.source ?? "기타", b.dueAt ?? null],
+    "INSERT INTO todos (title, prio, source, done, due_at, google_sync_status) VALUES ($1,$2,$3,false,$4,$5) RETURNING id",
+    [title, b.prio ?? "mid", b.source ?? "기타", dueAt, dueAt ? "pending" : null],
   );
+  // 시윤학원 캘린더 push — 응답을 막지 않음 (R-32)
+  if (dueAt) void pushTodoEvent(t.id, title, new Date(dueAt));
   const subs: Array<{ id: string; title: string; done: boolean }> = [];
   const titles: string[] = Array.isArray(b.subs) ? b.subs : [];
   for (let i = 0; i < titles.length; i++) {
@@ -119,7 +130,9 @@ api.patch("/todos/:id/subtasks/:sid", async (c) => {
 });
 
 api.delete("/todos/:id", async (c) => {
-  await q("UPDATE todos SET deleted_at=NOW() WHERE id=$1", [c.req.param("id")]);
+  const id = c.req.param("id");
+  void deleteTodoEvent(id); // 구글 이벤트도 삭제 (실패해도 앱 삭제 진행)
+  await q("UPDATE todos SET deleted_at=NOW() WHERE id=$1", [id]);
   return c.json({ ok: true });
 });
 

@@ -82,6 +82,9 @@ CREATE TABLE IF NOT EXISTS memos (
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_event_id TEXT;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_sync_status TEXT;
+ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_sync_error TEXT;
 CREATE TABLE IF NOT EXISTS timer_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
