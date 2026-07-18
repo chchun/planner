@@ -17,7 +17,7 @@ export async function seedIfEmpty(): Promise<void> {
   const hash = bcrypt.hashSync("planner123", 10);
   await q(
     `INSERT INTO users (username, password_hash, display_name, role, grade_label) VALUES
-     ('minjun', $1, '김민준', 'student', '고등학교 2학년'),
+     ('siyoon', $1, '전시윤', 'student', '고등학교 2학년'),
      ('mom',    $1, '엄마',   'parent',  '학부모'),
      ('dad',    $1, '아빠',   'parent',  '학부모')`,
     [hash],
@@ -83,7 +83,7 @@ export async function seedIfEmpty(): Promise<void> {
     ('국어','#ede9fe','비문학 오답 노트 — 지문 사진 캡처해서 붙여두기',true)`);
 
   // 타이머 세션 — mock 누적(오늘/주)을 세션으로 분해해 시드
-  const [student] = await q<{ id: string }>("SELECT id FROM users WHERE username='minjun'");
+  const [student] = await q<{ id: string }>("SELECT id FROM users WHERE username='siyoon'");
   const todaySec: Record<string, number> = { 수학: 4800, 영어: 2700, 국어: 1800, 과학: 3900, 사회: 0 };
   const weekSec: Record<string, number> = { 수학: 28800, 영어: 18000, 국어: 12600, 과학: 21600, 사회: 7200 };
   const dow = (new Date().getDay() + 6) % 7; // 월=0

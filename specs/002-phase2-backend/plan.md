@@ -33,7 +33,7 @@ memos(id, folder, color, text, image, done, deleted_at) / timer_sessions(id, use
 
 ## 실행
 - `npm run server`(tsx watch) + `npm run dev`(Vite). 시드는 서버 부팅 시 테이블이 비어 있으면 자동 실행
-- 데모 계정: minjun / mom / dad, 비밀번호 공통 `planner123` (가족용 — 운영 전 변경)
+- 데모 계정: siyoon / mom / dad, 비밀번호 공통 `planner123` (가족용 — 운영 전 변경)
 
 ## 리스크
 - PGlite는 단일 프로세스 전용(동시 접속 1) — 개발용으로 충분, 운영은 DATABASE_URL로 실제 PG

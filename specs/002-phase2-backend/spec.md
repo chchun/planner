@@ -8,7 +8,7 @@
 - 제외: 오프라인(IndexedDB), Google Calendar, 충돌 감지 활성화(version 컬럼은 예약만) → Phase 3~4
 
 ## 사용자 / 계정
-- 계정 3개 시드: 학생 1(minjun) + 부모 2(mom, dad). 공개 회원가입 없음(가족용)
+- 계정 3개 시드: 학생 1(siyoon, 전시윤) + 부모 2(mom, dad). 공개 회원가입 없음(가족용)
 - role: `student` | `parent`. **부모는 조회 + 등록 가능**(할일·메모 등). 타이머 세션 기록은 학생만
 
 ## 요구사항

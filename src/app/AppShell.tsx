@@ -22,7 +22,7 @@ const PAD_TITLES: Record<Tab, string> = {
 };
 
 const PHONE_TITLES: Record<Tab, string> = {
-  dashboard: "안녕, 민준아 👋",
+  dashboard: "안녕 👋",
   planner: "스터디 플래너",
   timer: "공부 타이머",
   calendar: "캘린더",
@@ -170,7 +170,9 @@ function MobileHeader() {
             <SyncStatus compact />
           </div>
           <div className="mt-0.5 text-[21px] font-extrabold tracking-tight text-slate-900">
-            {PHONE_TITLES[activeTab]}
+            {activeTab === "dashboard" && user
+              ? `안녕, ${user.displayName.slice(1)}아 👋`
+              : PHONE_TITLES[activeTab]}
           </div>
         </div>
         <div className="flex items-center gap-2.5">

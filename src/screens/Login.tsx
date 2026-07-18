@@ -65,7 +65,7 @@ export function Login() {
         </button>
 
         <div className="mt-4 text-center text-xs font-semibold text-slate-400">
-          학생: minjun · 부모: mom, dad
+          학생: siyoon · 부모: mom, dad
         </div>
       </form>
     </div>
