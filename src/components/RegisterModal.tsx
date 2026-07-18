@@ -21,6 +21,7 @@ const INITIAL_FORM: RegisterFormValues = {
 /** 공용 등록 폼 — iPad·PC 다이얼로그와 모바일 바텀시트가 같은 폼을 감싼다 */
 function RegisterForm({ onClose }: { onClose: () => void }) {
   const createTodo = useAppStore((s) => s.createTodo);
+  const online = useAppStore((s) => s.online);
   const [form, setForm] = useState<RegisterFormValues>(INITIAL_FORM);
   const [dueError, setDueError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -185,9 +186,14 @@ function RegisterForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="shrink-0 border-t border-slate-100 px-[22px] pb-[22px] pt-3">
+        {!online && (
+          <div className="mb-2 text-center text-xs font-bold text-slate-400">
+            오프라인 — 연결 후 등록할 수 있어요
+          </div>
+        )}
         <button
           onClick={() => void handleSave()}
-          disabled={saving}
+          disabled={saving || !online}
           className="w-full rounded-[14px] bg-brand p-[15px] text-[15px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(79,70,229,0.5)] hover:bg-brand-hover disabled:opacity-60"
         >
           {saving ? "저장 중…" : "저장하기"}

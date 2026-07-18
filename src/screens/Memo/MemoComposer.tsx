@@ -5,6 +5,7 @@ import { useAppStore } from "../../store/useAppStore";
 
 export function MemoComposer({ folders }: { folders: string[] }) {
   const createMemo = useAppStore((s) => s.createMemo);
+  const online = useAppStore((s) => s.online);
   const [text, setText] = useState("");
   const [color, setColor] = useState(memoSwatches[0]);
   const [folder, setFolder] = useState("아이디어");
@@ -90,9 +91,11 @@ export function MemoComposer({ folders }: { folders: string[] }) {
           </label>
           <button
             onClick={() => void submit()}
-            className="min-h-[40px] flex-1 rounded-chip bg-brand px-5 py-2 text-[13px] font-extrabold text-white hover:bg-brand-hover lg:flex-none"
+            disabled={!online}
+            title={online ? undefined : "오프라인 — 연결 후 등록할 수 있어요"}
+            className="min-h-[40px] flex-1 rounded-chip bg-brand px-5 py-2 text-[13px] font-extrabold text-white hover:bg-brand-hover disabled:opacity-50 lg:flex-none"
           >
-            추가
+            {online ? "추가" : "오프라인"}
           </button>
         </div>
       </div>

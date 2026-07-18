@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { headerDateLabel } from "../lib/date";
+import { OfflineBanner, SyncStatus } from "../components/SyncStatus";
 import type { Tab } from "../data/types";
 import { useAppStore } from "../store/useAppStore";
 import {
@@ -92,6 +93,7 @@ function Sidebar() {
         <PlusIcon size={18} />
         <span>새 숙제 등록</span>
       </button>
+      <SyncStatus />
       <UserProfileRow />
     </aside>
   );
@@ -163,7 +165,10 @@ function MobileHeader() {
     <header className="sticky top-0 z-20 border-b border-slate-100 bg-white px-5 pb-3.5 pt-4 lg:hidden">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-xs font-semibold text-slate-400">{headerDateLabel()}</div>
+          <div className="flex items-center gap-1 text-xs font-semibold text-slate-400">
+            {headerDateLabel()}
+            <SyncStatus compact />
+          </div>
           <div className="mt-0.5 text-[21px] font-extrabold tracking-tight text-slate-900">
             {PHONE_TITLES[activeTab]}
           </div>
@@ -216,6 +221,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <OfflineBanner />
       <MobileTabBar />
     </div>
   );
