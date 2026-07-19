@@ -7,7 +7,7 @@
   `server/seed.ts`를 요일별 시간표 + 오늘 계획으로 갱신
   *DoD: `npm run db:setup`으로 로컬 PGlite/Neon에 컬럼 생성, 기존 데이터 보존, 시드 정상*
 
-- [ ] **T62. 백엔드 날짜별 조회 + 계획 CRUD** (R-62, R-63)
+- [x] **T62. 백엔드 날짜별 조회 + 계획 CRUD** (R-62, R-63)
   `GET /api/planner?date=`, `POST /api/plan`, `DELETE /api/plan/:id`,
   `bootstrap`의 plan을 오늘·timetable을 오늘 요일로 필터
   *DoD: curl로 날짜별 timetable/plan 조회, 계획 추가·삭제 확인. 회귀 없음*

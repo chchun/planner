@@ -52,11 +52,13 @@ api.get("/bootstrap", async (c) => {
      JOIN todos t ON t.id = st.todo_id WHERE t.deleted_at IS NULL ORDER BY st.sort`,
   );
 
+  // 계획은 오늘(KST) 날짜, 시간표는 오늘 요일 (spec 006)
   const plan = await q(
-    "SELECT id, subject, goal_min, memo, done FROM plan_items ORDER BY sort",
+    "SELECT id, subject, goal_min, memo, done FROM plan_items WHERE plan_date = (NOW() AT TIME ZONE 'Asia/Seoul')::date ORDER BY sort",
   );
   const timetable = await q(
-    "SELECT subject, start_h::float AS start, end_h::float AS \"end\" FROM timetable_blocks ORDER BY start_h",
+    `SELECT subject, start_h::float AS start, end_h::float AS "end" FROM timetable_blocks
+     WHERE dow = EXTRACT(ISODOW FROM (NOW() AT TIME ZONE 'Asia/Seoul'))::int - 1 ORDER BY start_h`,
   );
   const events = await q(
     `SELECT id, title, type, start_at FROM calendar_events
@@ -157,10 +159,49 @@ api.delete("/todos/:id", async (c) => {
   return c.json({ ok: true });
 });
 
+// ---- planner (날짜별 조회) — spec 006 ----
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+api.get("/planner", async (c) => {
+  const date = c.req.query("date");
+  if (!date || !DATE_RE.test(date)) return c.json({ error: "date=YYYY-MM-DD 필요" }, 400);
+  const timetable = await q(
+    `SELECT subject, start_h::float AS start, end_h::float AS "end" FROM timetable_blocks
+     WHERE dow = EXTRACT(ISODOW FROM $1::date)::int - 1 ORDER BY start_h`,
+    [date],
+  );
+  const plan = await q(
+    "SELECT id, subject, goal_min, memo, done FROM plan_items WHERE plan_date = $1::date ORDER BY sort",
+    [date],
+  );
+  return c.json({
+    timetable,
+    plan: plan.map((p) => ({ id: p.id, subject: p.subject, goal: p.goal_min, memo: p.memo, done: p.done })),
+  });
+});
+
 // ---- plan ----
+api.post("/plan", async (c) => {
+  const b = await c.req.json();
+  const date: string = b.date ?? "";
+  if (!DATE_RE.test(date)) return c.json({ error: "date=YYYY-MM-DD 필요" }, 400);
+  const [row] = await q<{ id: string }>(
+    `INSERT INTO plan_items (subject, goal_min, memo, plan_date, sort)
+     VALUES ($1,$2,$3,$4::date, COALESCE((SELECT MAX(sort)+1 FROM plan_items WHERE plan_date=$4::date), 0))
+     RETURNING id`,
+    [b.subject ?? "수학", Math.max(0, Number(b.goal) || 0), b.memo ?? "", date],
+  );
+  return c.json({ id: row.id });
+});
+
 api.patch("/plan/:id", async (c) => {
   const b = await c.req.json();
   await q("UPDATE plan_items SET done=$1 WHERE id=$2", [!!b.done, c.req.param("id")]);
+  return c.json({ ok: true });
+});
+
+api.delete("/plan/:id", async (c) => {
+  await q("DELETE FROM plan_items WHERE id=$1", [c.req.param("id")]);
   return c.json({ ok: true });
 });
 
