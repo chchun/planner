@@ -7,7 +7,7 @@ function accentOf(memo: Memo): string {
   return memoAccentMap[memo.color] ?? "#64748b";
 }
 
-export function MemoCard({ memo }: { memo: Memo }) {
+export function MemoCard({ memo, onOpenImage }: { memo: Memo; onOpenImage?: (src: string) => void }) {
   const toggleDone = useAppStore((s) => s.toggleMemoDone);
   const deleteMemo = useAppStore((s) => s.deleteMemo);
   const accent = accentOf(memo);
@@ -42,7 +42,14 @@ export function MemoCard({ memo }: { memo: Memo }) {
           </button>
         </div>
       </div>
-      {memo.image && <img src={memo.image} alt="" className="block w-full rounded-[10px]" />}
+      {memo.image && (
+        <img
+          src={memo.image}
+          alt="메모 이미지 (클릭하면 확대)"
+          onClick={() => onOpenImage?.(memo.image!)}
+          className="block w-full cursor-zoom-in rounded-[10px]"
+        />
+      )}
       <div
         className="whitespace-pre-wrap text-[13px] font-semibold leading-[1.45] text-slate-800 lg:text-sm lg:leading-normal"
         style={{ textDecoration: memo.done ? "line-through" : "none" }}
@@ -53,7 +60,7 @@ export function MemoCard({ memo }: { memo: Memo }) {
   );
 }
 
-export function MemoRow({ memo }: { memo: Memo }) {
+export function MemoRow({ memo, onOpenImage }: { memo: Memo; onOpenImage?: (src: string) => void }) {
   const toggleDone = useAppStore((s) => s.toggleMemoDone);
   const deleteMemo = useAppStore((s) => s.deleteMemo);
   const accent = accentOf(memo);
@@ -66,8 +73,9 @@ export function MemoRow({ memo }: { memo: Memo }) {
       {memo.image && (
         <img
           src={memo.image}
-          alt=""
-          className="h-10 w-10 shrink-0 rounded-[7px] object-cover lg:h-[46px] lg:w-[46px] lg:rounded-lg"
+          alt="메모 이미지 (클릭하면 확대)"
+          onClick={() => onOpenImage?.(memo.image!)}
+          className="h-10 w-10 shrink-0 cursor-zoom-in rounded-[7px] object-cover lg:h-[46px] lg:w-[46px] lg:rounded-lg"
         />
       )}
       <div className="min-w-0 flex-1">

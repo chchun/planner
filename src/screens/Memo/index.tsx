@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { GridIcon, ListIcon } from "../../components/icons";
+import { ImageLightbox } from "../../components/ImageLightbox";
 import { memoFolders } from "../../data/constants";
 import { useAppStore } from "../../store/useAppStore";
 import { MemoComposer } from "./MemoComposer";
@@ -11,6 +13,7 @@ export function MemoBoard() {
   const currentFolder = useAppStore((s) => s.currentFolder);
   const setCurrentFolder = useAppStore((s) => s.setCurrentFolder);
   const folders = memoFolders;
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const filtered = memos.filter((m) => currentFolder === "전체" || m.folder === currentFolder);
 
@@ -62,13 +65,13 @@ export function MemoBoard() {
       {memoView === "card" ? (
         <div className="grid grid-cols-2 items-start gap-2.5 lg:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] lg:gap-3.5">
           {filtered.map((m) => (
-            <MemoCard key={m.id} memo={m} />
+            <MemoCard key={m.id} memo={m} onOpenImage={setLightbox} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {filtered.map((m) => (
-            <MemoRow key={m.id} memo={m} />
+            <MemoRow key={m.id} memo={m} onOpenImage={setLightbox} />
           ))}
         </div>
       )}
@@ -78,6 +81,8 @@ export function MemoBoard() {
           이 폴더에 메모가 없어요
         </div>
       )}
+
+      {lightbox && <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />}
     </div>
   );
 }

@@ -36,6 +36,7 @@ interface AppState {
   timetable: TimetableBlock[];
   events: CalendarEvent[];
   weekStats: number[];
+  weekBySubject: Record<string, number[]>;
 
   timer: TimerState;
   toggleTimer: (name: string) => void;
@@ -95,6 +96,7 @@ export const useAppStore = create<AppState>((set, get) => {
         events: s.events,
         memos: s.memos,
         weekStats: s.weekStats,
+        weekBySubject: s.weekBySubject,
         blobEnabled: s.blobEnabled,
       };
       void saveSnapshot(data).catch(logErr);
@@ -112,6 +114,7 @@ export const useAppStore = create<AppState>((set, get) => {
       events: data.events,
       memos: data.memos,
       weekStats: data.weekStats,
+      weekBySubject: data.weekBySubject ?? {},
       blobEnabled: data.blobEnabled ?? false,
       online: true,
       lastSyncAt: Date.now(),
@@ -198,6 +201,7 @@ export const useAppStore = create<AppState>((set, get) => {
               events: snap.data.events,
               memos: snap.data.memos,
               weekStats: snap.data.weekStats,
+              weekBySubject: snap.data.weekBySubject ?? {},
               blobEnabled: snap.data.blobEnabled ?? false,
               online: false,
               lastSyncAt: snap.savedAt,
@@ -239,6 +243,7 @@ export const useAppStore = create<AppState>((set, get) => {
     timetable: [],
     events: [],
     weekStats: [0, 0, 0, 0, 0, 0, 0],
+    weekBySubject: {},
 
     timer: { runningSubject: null, startedAt: null },
     toggleTimer: (name) => {

@@ -77,6 +77,19 @@ api.get("/bootstrap", async (c) => {
   const weekStats = [0, 0, 0, 0, 0, 0, 0];
   for (const r of weekRows) weekStats[r.dow] = r.sec;
 
+  // 과목×요일 매트릭스 (월=0…일=6, 초) — 주간 그래프 과목별 표시·테이블 (spec Timer)
+  const weekMatrixRows = await q<{ subject: string; dow: number; sec: number }>(
+    `SELECT subject, EXTRACT(ISODOW FROM started_at AT TIME ZONE 'Asia/Seoul')::int - 1 AS dow,
+            SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))::float AS sec
+     FROM timer_sessions WHERE started_at >= $1 GROUP BY subject, 2`,
+    [monday],
+  );
+  const weekBySubject: Record<string, number[]> = {};
+  for (const s of subjects) weekBySubject[s.name] = [0, 0, 0, 0, 0, 0, 0];
+  for (const r of weekMatrixRows) {
+    (weekBySubject[r.subject] ??= [0, 0, 0, 0, 0, 0, 0])[r.dow] = Math.round(r.sec);
+  }
+
   return c.json({
     user: c.get("user"),
     subjects: subjects.map((s) => ({ name: s.name, color: s.color, todaySec: Math.round(s.today_sec), weekSec: Math.round(s.week_sec) })),
@@ -93,6 +106,7 @@ api.get("/bootstrap", async (c) => {
     ],
     memos,
     weekStats: weekStats.map(Math.round),
+    weekBySubject,
     blobEnabled: blobEnabled(),
   });
 });

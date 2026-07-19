@@ -126,6 +126,8 @@ export interface BootstrapData {
   memos: Memo[];
   /** 월~일 초 단위 타이머 집계 */
   weekStats: number[];
+  /** 과목명 → 월~일(길이 7) 초 단위 집계 — 주간 그래프 과목별 표시·테이블 */
+  weekBySubject: Record<string, number[]>;
   /** 서버에 Blob 저장소가 설정됐는지 — false면 이미지 첨부 비활성 (spec 005 R-41) */
   blobEnabled: boolean;
 }
