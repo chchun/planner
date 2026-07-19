@@ -4,6 +4,7 @@ import {
   clearSnapshot, enqueue, flushQueue, loadQueue, loadSnapshot, saveSnapshot,
   type SyncQueueItem,
 } from "../data/offline";
+import { hasSavedPassword } from "../data/rememberedAuth";
 import { repo } from "../data/repository";
 import type {
   BootstrapData, CalendarEvent, Memo, PlanItem, Subject, Tab, TimerState, TimetableBlock, Todo, User,
@@ -228,7 +229,8 @@ export const useAppStore = create<AppState>((set, get) => {
       set({ status: "login", user: null, timer: { runningSubject: null, startedAt: null } });
     },
 
-    activeTab: "dashboard",
+    // 자격증명 저장 사용자는 앱 진입 시 메모 화면부터 (세션 자동복원·자동 로그인 양쪽 일관)
+    activeTab: hasSavedPassword() ? "memo" : "dashboard",
     setTab: (tab) => set({ activeTab: tab }),
 
     subjects: [],
