@@ -25,7 +25,18 @@ export default defineConfig({
         // 앱 셸만 프리캐시. API는 절대 캐시하지 않는다 (spec 003 R-24) —
         // 데이터 캐시는 앱 레벨 IndexedDB 스냅샷이 담당.
         navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [],
+        runtimeCaching: [
+          {
+            // 메모 이미지(Vercel Blob) — 오프라인에서도 표시 (spec 005 R-45). 캐시는 표시 전용
+            urlPattern: ({ url }) => url.hostname.endsWith(".public.blob.vercel-storage.com"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "blob-images",
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

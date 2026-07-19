@@ -22,7 +22,7 @@
   `vercel.json`(빌드·crons·rewrite), `.env.example` 갱신, Vercel 프로젝트 env 등록, 프리뷰 배포
   *DoD: 배포본에서 로그인→메모 이미지 업로드/표시→새로고침 유지, 숙제 등록→구글 캘린더 반영, 캘린더 조회 표시*
 
-- [ ] **T45. 오프라인 이미지 캐싱 + 문서 마무리** (R-45)
+- [x] **T45. 오프라인 이미지 캐싱 + 문서 마무리** (R-45)
   workbox runtimeCaching(blob 호스트 CacheFirst), README/ROADMAP 배포 절차 갱신
   *DoD: 이미지 메모 로드 후 오프라인 전환 시 이미지 유지, 문서에 배포 따라하기 반영*
 
