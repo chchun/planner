@@ -17,7 +17,7 @@ Phase 1은 **React + TypeScript + Tailwind CSS** 프론트엔드(mock 데이터)
 4. **Implement** — tasks.md 순서대로 구현. 작업 하나 완료 = 체크 표시 + 의미 있는 단위로 커밋
 
 - 구현 중 spec/plan과 어긋나는 결정이 필요하면 **코드를 우회하지 말고 문서를 먼저 고친 뒤** 진행한다.
-- 현재 진행 중인 spec: `specs/001-phase1-ui/`
+- 현재 진행 중인 spec: `specs/005-deploy-vercel/` (Phase 1~4 완료, 배포 단계)
 
 ## 문서 지도
 | 문서 | 역할 |
