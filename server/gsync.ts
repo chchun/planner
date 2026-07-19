@@ -37,16 +37,17 @@ export async function deleteTodoEvent(todoId: string): Promise<void> {
   }
 }
 
-/** 부팅 시 pending/failed 재시도 (R-32) */
-export async function retryPendingSyncs(): Promise<void> {
-  if (!gcalEnabled()) return;
+/** 부팅(로컬)·크론(R-43) 시 pending/failed 재시도 (R-32) — 재시도한 건수 반환 */
+export async function retryPendingSyncs(): Promise<number> {
+  if (!gcalEnabled()) return 0;
   const rows = await q<{ id: string; title: string; due_at: string }>(
     `SELECT id, title, due_at FROM todos
      WHERE google_sync_status IN ('pending','failed') AND deleted_at IS NULL AND due_at IS NOT NULL`,
   );
-  if (rows.length === 0) return;
+  if (rows.length === 0) return 0;
   console.log(`[gcal] 재시도 대상 ${rows.length}건`);
   for (const r of rows) {
     await pushTodoEvent(r.id, r.title, new Date(r.due_at));
   }
+  return rows.length;
 }

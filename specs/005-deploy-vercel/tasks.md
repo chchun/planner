@@ -13,7 +13,7 @@
   `waitUntilCompat` 헬퍼로 gcal push/삭제·blob del 감싸기, 프로덕션 Secure 쿠키
   *DoD: 로컬 `npm run server` 기존과 동일 동작(회귀 없음), 타입체크·빌드 통과*
 
-- [ ] **T43. Neon 셋업 스크립트 + 크론 재시도** (R-43)
+- [x] **T43. Neon 셋업 스크립트 + 크론 재시도** (R-43)
   `scripts/db-setup.ts` + `npm run db:setup`(CREATE TABLE + seedIfEmpty), `GET /api/cron/retry-gcal`(CRON_SECRET),
   `api` 진입점에서 부팅 로직 제거 확인
   *DoD: DATABASE_URL로 Neon에 스키마·시드 성공, 크론 엔드포인트가 비밀 헤더 검증 후 재시도*
