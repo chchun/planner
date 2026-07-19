@@ -37,6 +37,8 @@ api/
   - `db.ts`는 `DATABASE_URL` 있으면 `pg.Pool` — 이미 구현됨. 서버리스에선 모듈 스코프 풀 1개 재사용(웜 인스턴스 공유)
 - 스키마·시드: `scripts/db-setup.ts` 신규 → `npm run db:setup`으로 로컬에서 Neon에 1회 실행(CREATE TABLE + seedIfEmpty).
   **DDL은 언풀드 연결 사용** — 스크립트는 `NEON_DATABASE_URL_UNPOOLED || DATABASE_URL` 을 읽는다
+- 보완: Vercel **Neon 통합(integration)** 사용 시 DB 접속값이 Sensitive로 잠겨 로컬 db:setup이 불가
+  → `GET /api/admin/db-setup`(CRON_SECRET 보호, 멱등)으로 배포 후 원격 1회 실행 경로를 둔다
 - 재시도 크론: `GET /api/cron/retry-gcal` — `x-cron-secret` 헤더 **또는** `Authorization: Bearer` 값이
   `CRON_SECRET`과 일치해야 실행(Vercel Cron은 커스텀 헤더를 못 보내고 Bearer를 자동 첨부). `retryPendingSyncs()` 실행.
   `vercel.json` crons에 등록(Hobby는 1일 1회). 추가로 bootstrap에서 기회적 재시도는 선택

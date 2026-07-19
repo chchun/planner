@@ -328,7 +328,7 @@ npm run preview     # 빌드 결과 로컬 미리보기
 | 5 | Vercel 배포 — Blob 이미지, 서버리스 전환, Neon, 크론 재시도, 오프라인 이미지 캐싱 | `api/index.ts`, `vercel.json`, `scripts/db-setup.ts` | `fc950b1`~`6a275ca` |
 
 - **standalone 최종본 태그**: [`v1.0_standalone`](https://github.com/chchun/planner/releases/tag/v1.0_standalone) — Phase 5 서버리스 전환 직전(PGlite/Node 단독 실행) 스냅샷
-- **프로덕션**: https://planner-three-livid.vercel.app (구조는 `docs/vercel_deploy.md`)
+- **프로덕션**: https://planner-zeta-nine.vercel.app (구조는 `docs/vercel_deploy.md`)
 
 **남은 항목 (백로그 — `docs/ROADMAP.md` 참조)**
 

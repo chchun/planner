@@ -7,12 +7,18 @@
 
 | 항목 | 값 |
 |---|---|
-| Vercel 계정 | **chchun88@gmail.com** (CLI 사용자명 `jeon28`, 팀 슬러그 `dalbus-projects`) |
-| Vercel 프로젝트 | **planner** (`prj_TaHQIGEArNoo5KPI4k6CVI9Tud6w`) |
-| 프로덕션 URL | **https://planner-three-livid.vercel.app** (별칭: `planner-dalbus-projects.vercel.app`) |
-| GitHub 저장소 | https://github.com/chchun/planner (푸시 시 자동 배포) |
+| Vercel 계정 | **chchun88@gmail.com** (팀 슬러그 `chchuns-projects`) |
+| Vercel 프로젝트 | **planner** (`prj_EHQAM6ND6wC2GS2ekPl0Is506G8N`) |
+| 프로덕션 URL | **https://planner-zeta-nine.vercel.app** |
+| DB | **Neon — Vercel Marketplace 통합**으로 프로젝트에 연결(env 자동 주입, Sensitive) |
+| Blob | 스토어 "plan" (`PLAN_BLOB_*` 프리픽스로 env 발급) — 이 프로젝트에 연결됨 |
+| GitHub 저장소 | https://github.com/chchun/planner |
 | standalone 태그 | `v1.0_standalone` — 서버리스 전환 직전(PGlite/Node 단독) 스냅샷 |
 | 함수 리전 | iad1 (기본값) / Node.js 런타임 |
+
+> ⚠️ **폐기 예정**: jeon28 계정(팀 dalbus-projects)의 동명 프로젝트 planner
+> (`planner-three-livid.vercel.app`)는 계정 혼동으로 임시 배포됐던 것 — 정리 대상.
+> 그쪽에는 별도 Neon(ep-round-flower…)에 동일 스키마·시드가 들어 있다.
 
 ## 배포 아키텍처
 
@@ -39,7 +45,13 @@ Vercel Edge (vercel.json rewrites)
 ## 저장소별 저장 내용 · 시점
 
 ### Neon PostgreSQL — 원본 데이터 (전부 여기)
-- **연결**: `DATABASE_URL`(풀드, `-pooler` 포함) — 서버리스 커넥션 폭주 방지. 모듈 스코프 풀을 웜 인스턴스가 재사용
+- **연결**: `DATABASE_URL`(풀드) — **Vercel Neon 통합이 자동 주입**(Sensitive — 값은 로컬로 pull 불가).
+  서버리스 커넥션 폭주 방지를 위해 풀드 사용, 모듈 스코프 풀을 웜 인스턴스가 재사용
+- **스키마·시드 적용**: 통합 env가 Sensitive라 로컬 `npm run db:setup`이 불가 →
+  배포 후 `GET /api/admin/db-setup`(CRON_SECRET 보호, 멱등)을 1회 호출한다
+  ```bash
+  curl -H "x-cron-secret: $CRON_SECRET" https://planner-zeta-nine.vercel.app/api/admin/db-setup
+  ```
 - **테이블**: users, sessions, subjects, todos, todo_subtasks, plan_items, timetable_blocks, calendar_events, memos, timer_sessions
 - **언제 쓰는가**:
   - 로그인 → sessions에 토큰(30일) 생성 / 로그아웃 → 삭제
@@ -65,16 +77,16 @@ Vercel Edge (vercel.json rewrites)
 
 ## 환경 변수 (Vercel 프로젝트 Production — 값은 대시보드에서만 확인)
 
-| 변수 | 용도 · 사용 시점 |
-|---|---|
-| `DATABASE_URL` | Neon **풀드** 연결 문자열 — 모든 API 요청의 DB 접근 |
-| `BLOB_READ_WRITE_TOKEN` | Blob put/del — 이미지 업로드·메모 삭제 시 |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | 서비스 계정 키(base64) — 캘린더 push/조회 시 JWT 서명 |
-| `GCAL_FAMILY_ID` / `GCAL_FAMILY_LABEL` | 가족일정 캘린더 ID·표시 라벨 — 조회 병합 |
-| `GCAL_STUDENT_ID` / `GCAL_STUDENT_LABEL` | 시윤학원 캘린더 ID·표시 라벨 — 숙제 push + 조회 병합 |
-| `CRON_SECRET` | `/api/cron/retry-gcal` 인증 — Vercel Cron이 `Authorization: Bearer`로 자동 첨부, 수동 호출은 `x-cron-secret` 헤더 |
+| 변수 | 출처 | 용도 · 사용 시점 |
+|---|---|---|
+| `DATABASE_URL` (+ `DATABASE_URL_UNPOOLED`, `POSTGRES_*`, `PG*`) | **Neon 통합 자동 주입** | 모든 API 요청의 DB 접근(코드는 `DATABASE_URL`만 사용) |
+| `PLAN_BLOB_READ_WRITE_TOKEN` (+ `PLAN_BLOB_STORE_ID`) | **Blob 스토어 연결 자동 주입** | Blob put/del — 이미지 업로드·메모 삭제 시. 코드는 `BLOB_READ_WRITE_TOKEN ?? PLAN_BLOB_READ_WRITE_TOKEN` 순으로 읽음 |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | 수동 등록 | 서비스 계정 키(base64) — 캘린더 push/조회 시 JWT 서명 |
+| `GCAL_FAMILY_ID` / `GCAL_FAMILY_LABEL` | 수동 등록 | 가족일정 캘린더 ID·표시 라벨 — 조회 병합 |
+| `GCAL_STUDENT_ID` / `GCAL_STUDENT_LABEL` | 수동 등록 | 시윤학원 캘린더 ID·표시 라벨 — 숙제 push + 조회 병합 |
+| `CRON_SECRET` | 수동 등록 | `/api/cron/retry-gcal`·`/api/admin/db-setup` 인증 — Vercel Cron이 `Authorization: Bearer`로 자동 첨부, 수동 호출은 `x-cron-secret` 헤더 |
 
-로컬 `.env`에만 있는 값: `NEON_DATABASE_URL`(풀드, 로컬에서 Neon 붙여볼 때), `NEON_DATABASE_URL_UNPOOLED`(`db:setup` 전용), `PLAN_BLOB_*`(동일 토큰의 프리픽스 발급본).
+로컬 `.env`에만 있는 값: `NEON_DATABASE_URL`·`NEON_DATABASE_URL_UNPOOLED`(별도 Neon — 로컬에서 붙여볼 때·`db:setup` 전용), `BLOB_READ_WRITE_TOKEN`(PLAN 토큰과 동일 값).
 
 ## 크론
 
@@ -87,12 +99,14 @@ Vercel Edge (vercel.json rewrites)
 ## 운영 작업 모음
 
 ```bash
-npx vercel deploy --prod        # 수동 프로덕션 배포 (git push 시엔 자동)
+npx vercel deploy --prod        # 수동 프로덕션 배포
 npx vercel logs <deployment>    # 함수 런타임 로그
 npx vercel env ls production    # 환경변수 목록 확인
-npm run db:setup                # Neon 스키마·시드 (로컬에서, NEON_DATABASE_URL_UNPOOLED 사용)
+# 스키마·시드 (통합 Neon — 원격 실행):
+#   curl -H "x-cron-secret: $CRON_SECRET" https://planner-zeta-nine.vercel.app/api/admin/db-setup
+npm run db:setup                # (로컬 .env의 별도 Neon에만 해당 — NEON_DATABASE_URL_UNPOOLED 사용)
 ```
 
-- 스키마 변경 시: `server/db.ts`의 SCHEMA 수정 → `npm run db:setup` 재실행(CREATE TABLE IF NOT EXISTS / ALTER … IF NOT EXISTS 멱등)
+- 스키마 변경 시: `server/db.ts`의 SCHEMA 수정 → 배포 → `/api/admin/db-setup` 재호출(CREATE TABLE IF NOT EXISTS / ALTER … IF NOT EXISTS 멱등)
 - 시드 초기화: Neon 콘솔에서 테이블 비우고 `db:setup` (seedIfEmpty는 users가 비어있을 때만 시드)
 - 무료 tier 확인 포인트: Neon 저장/컴퓨트 한도, Blob 용량 — 이미지가 커지면 Blob부터 참
