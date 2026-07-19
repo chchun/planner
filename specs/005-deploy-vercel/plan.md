@@ -16,7 +16,8 @@ api/
 - `api/[[...route]].ts`는 부팅 로직을 실행하지 않는다(서버리스엔 부팅이 없음). 스키마/시드는 별도 스크립트, 재시도는 크론.
 
 ## R-41 메모 이미지 → Vercel Blob
-- 의존성: `@vercel/blob`. 토큰: `BLOB_READ_WRITE_TOKEN`(Vercel 자동 주입, 로컬은 .env)
+- 의존성: `@vercel/blob`. 토큰: **`BLOB_READ_WRITE_TOKEN` → `PLAN_BLOB_READ_WRITE_TOKEN` 순으로 읽는다**
+  (이 스토어는 이름 프리픽스가 붙어 `PLAN_BLOB_*`로 발급됨. put 호출 시 `{ token }` 명시 권장)
 - 업로드 흐름 변경:
   - 클라이언트: 파일 선택 → `POST /api/memos/image`(multipart 또는 base64 body)로 **파일 전송**(dataURL을 memo에 넣지 않음)
   - 서버: `put(`memos/${uuid}`, file, { access: 'public' })` → `{ url }` 반환
@@ -34,7 +35,8 @@ api/
 ## R-43 Neon · 스키마 셋업 · 크론
 - DB 드라이버: 기존 `pg` 유지, **Neon 풀드 연결 문자열**(`...-pooler...`) 사용 → 서버리스 커넥션 폭주 방지
   - `db.ts`는 `DATABASE_URL` 있으면 `pg.Pool` — 이미 구현됨. 서버리스에선 모듈 스코프 풀 1개 재사용(웜 인스턴스 공유)
-- 스키마·시드: `scripts/db-setup.ts` 신규 → `npm run db:setup`으로 로컬에서 Neon에 1회 실행(CREATE TABLE + seedIfEmpty)
+- 스키마·시드: `scripts/db-setup.ts` 신규 → `npm run db:setup`으로 로컬에서 Neon에 1회 실행(CREATE TABLE + seedIfEmpty).
+  **DDL은 언풀드 연결 사용** — 스크립트는 `NEON_DATABASE_URL_UNPOOLED || DATABASE_URL` 을 읽는다
 - 재시도 크론: `GET /api/cron/retry-gcal` — `x-cron-secret` 헤더 검증 후 `retryPendingSyncs()`.
   `vercel.json` crons에 등록(Hobby는 1일 1회). 추가로 bootstrap에서 기회적 재시도는 선택
 

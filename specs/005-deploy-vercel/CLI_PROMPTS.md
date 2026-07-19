@@ -29,7 +29,8 @@ specs/005-deploy-vercel/tasks.md 의 T41을 구현해줘. 요구사항은 spec.m
 
 핵심:
 - @vercel/blob 설치
-- server/blob.ts 신규: put/del 래퍼 + blobEnabled()(BLOB_READ_WRITE_TOKEN 유무). 토큰 없으면 업로드는 501/명확한 에러
+- server/blob.ts 신규: put/del 래퍼 + blobEnabled(). 토큰은 BLOB_READ_WRITE_TOKEN ?? PLAN_BLOB_READ_WRITE_TOKEN
+  순으로 읽고 put/del 에 { token } 으로 명시(이 스토어는 PLAN_BLOB_* 프리픽스로 발급됨). 토큰 없으면 업로드는 501/명확한 에러
 - 서버에 POST /api/memos/image 추가: 파일 받아 put(`memos/${uuid}`, file, {access:'public'}) → { url } 반환
 - 클라이언트 src/screens/Memo/MemoComposer.tsx: 파일을 dataURL로 memo에 넣던 걸,
   선택 즉시 /api/memos/image 로 업로드해서 받은 URL을 미리보기·저장에 쓰도록 변경
@@ -75,7 +76,8 @@ specs/005-deploy-vercel/tasks.md 의 T43을 구현해줘. spec.md R-43, plan.md 
 
 핵심:
 - scripts/db-setup.ts 신규 + package.json "db:setup": "tsx scripts/db-setup.ts".
-  DATABASE_URL 대상으로 initDb()(CREATE TABLE) + seedIfEmpty() 1회 실행하고 종료
+  NEON_DATABASE_URL_UNPOOLED || DATABASE_URL 을 대상으로 initDb()(CREATE TABLE) + seedIfEmpty() 1회 실행하고 종료
+  (언풀드=직접 연결로 DDL 실행. db.ts는 DATABASE_URL을 읽으므로 스크립트에서 언풀드 값을 DATABASE_URL로 주입 후 실행)
 - GET /api/cron/retry-gcal: 헤더 x-cron-secret === process.env.CRON_SECRET 검증 후 retryPendingSyncs() 실행,
   결과 JSON 반환. 인증 미들웨어 예외로 둠(크론은 세션 없음)
 - api/[[...route]].ts 진입점이 부팅 로직(initDb/seed/retry)을 실행하지 않는지 재확인
