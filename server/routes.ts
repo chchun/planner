@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import type { AuthUser } from "./auth";
+import { blobEnabled, deleteBlobUrl, isBlobUrl, putMemoImage } from "./blob";
 import { q } from "./db";
 import { listGoogleEvents } from "./google";
 import { deleteTodoEvent, pushTodoEvent } from "./gsync";
@@ -87,6 +89,7 @@ api.get("/bootstrap", async (c) => {
     ],
     memos,
     weekStats: weekStats.map(Math.round),
+    blobEnabled: blobEnabled(),
   });
 });
 
@@ -144,6 +147,28 @@ api.patch("/plan/:id", async (c) => {
 });
 
 // ---- memos ----
+// 이미지 업로드 → Vercel Blob 공개 URL 반환 (R-41). dataURL은 더 이상 DB에 저장하지 않는다
+api.post("/memos/image", async (c) => {
+  if (!blobEnabled()) {
+    return c.json({ error: "이미지 저장소(Blob)가 설정되지 않았습니다" }, 501);
+  }
+  const body = await c.req.parseBody();
+  const file = body.file;
+  if (!(file instanceof File) || file.size === 0) {
+    return c.json({ error: "이미지 파일이 필요합니다" }, 400);
+  }
+  if (!file.type.startsWith("image/")) {
+    return c.json({ error: "이미지 파일만 업로드할 수 있습니다" }, 400);
+  }
+  try {
+    const url = await putMemoImage(`memos/${randomUUID()}`, file);
+    return c.json({ url });
+  } catch (err) {
+    console.error("[blob] 업로드 실패:", err);
+    return c.json({ error: "이미지 업로드에 실패했습니다" }, 502);
+  }
+});
+
 api.post("/memos", async (c) => {
   const b = await c.req.json();
   const [m] = await q<{ id: string }>(
@@ -160,7 +185,13 @@ api.patch("/memos/:id", async (c) => {
 });
 
 api.delete("/memos/:id", async (c) => {
-  await q("UPDATE memos SET deleted_at=NOW() WHERE id=$1", [c.req.param("id")]);
+  const [m] = await q<{ image: string | null }>(
+    "UPDATE memos SET deleted_at=NOW() WHERE id=$1 RETURNING image",
+    [c.req.param("id")],
+  );
+  // Blob 파일 정리 — 실패해도 삭제는 완료된 상태 (T42에서 waitUntil로 전환 예정)
+  const image = m?.image ?? null;
+  if (isBlobUrl(image)) await deleteBlobUrl(image);
   return c.json({ ok: true });
 });
 

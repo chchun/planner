@@ -1,6 +1,6 @@
 // 데이터 접근 계층 (constitution §3) — Phase 2: 백엔드 API 구현체.
 // UI는 스토어를 통해 이 함수들만 사용한다. 서버 스키마는 server/db.ts 참조.
-import { del, get, patch, post } from "./api";
+import { del, get, patch, post, postForm } from "./api";
 import type { BootstrapData, User } from "./types";
 
 export const repo = {
@@ -20,6 +20,12 @@ export const repo = {
 
   createMemo: (input: { folder: string; color: string; text: string; image: string | null }) =>
     post<{ id: string }>("/api/memos", input),
+  /** 이미지를 Vercel Blob에 올리고 공개 URL을 받는다 (spec 005 R-41) */
+  uploadMemoImage: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return postForm<{ url: string }>("/api/memos/image", form);
+  },
   setMemoDone: (id: string, done: boolean) => patch(`/api/memos/${id}`, { done }),
   deleteMemo: (id: string) => del(`/api/memos/${id}`),
 

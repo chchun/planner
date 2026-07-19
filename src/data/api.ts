@@ -25,6 +25,9 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const get = <T>(path: string) => request<T>(path);
 export const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: JSON.stringify(body ?? {}) });
+/** multipart 업로드 — Content-Type은 브라우저가 boundary 포함해 설정 */
+export const postForm = <T>(path: string, form: FormData) =>
+  request<T>(path, { method: "POST", body: form, headers: {} });
 export const patch = <T>(path: string, body: unknown) =>
   request<T>(path, { method: "PATCH", body: JSON.stringify(body) });
 export const del = <T>(path: string) => request<T>(path, { method: "DELETE" });

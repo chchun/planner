@@ -1,25 +1,35 @@
 import { useState, type ChangeEvent } from "react";
 import { ImageIcon } from "../../components/icons";
 import { memoSwatches } from "../../data/constants";
+import { repo } from "../../data/repository";
 import { useAppStore } from "../../store/useAppStore";
 
 export function MemoComposer({ folders }: { folders: string[] }) {
   const createMemo = useAppStore((s) => s.createMemo);
   const online = useAppStore((s) => s.online);
+  const blobEnabled = useAppStore((s) => s.blobEnabled);
   const [text, setText] = useState("");
   const [color, setColor] = useState(memoSwatches[0]);
   const [folder, setFolder] = useState("아이디어");
   const [image, setImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const foldersNoAll = folders.filter((f) => f !== "전체");
+  const canAttach = online && blobEnabled && !uploading;
 
+  // 선택 즉시 Blob에 업로드하고 공개 URL만 보관한다 — dataURL 저장 폐기 (spec 005 R-41)
   const onPickImage = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setImage(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
     e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    repo
+      .uploadMemoImage(file)
+      .then(({ url }) => setImage(url))
+      .catch((err) => setUploadError(err instanceof Error ? err.message : "이미지 업로드에 실패했습니다"))
+      .finally(() => setUploading(false));
   };
 
   const submit = async () => {
@@ -27,6 +37,7 @@ export function MemoComposer({ folders }: { folders: string[] }) {
     await createMemo({ folder, color, text: text.trim(), image });
     setText("");
     setImage(null);
+    setUploadError(null);
   };
 
   return (
@@ -53,6 +64,7 @@ export function MemoComposer({ folders }: { folders: string[] }) {
           </button>
         </div>
       )}
+      {uploadError && <p className="mt-2 text-xs font-bold text-red-500">{uploadError}</p>}
       <div className="mt-2.5 flex flex-wrap items-center gap-2.5 lg:mt-3">
         <div className="flex gap-1.5">
           {memoSwatches.map((c) => (
@@ -84,14 +96,25 @@ export function MemoComposer({ folders }: { folders: string[] }) {
         </div>
         <div className="hidden flex-1 lg:block" />
         <div className="flex w-full gap-2 lg:w-auto">
-          <label className="flex min-h-[40px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-chip bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 lg:flex-none">
+          <label
+            title={
+              !online
+                ? "오프라인 — 연결 후 첨부할 수 있어요"
+                : !blobEnabled
+                  ? "이미지 저장소(Blob)가 설정되지 않았어요"
+                  : undefined
+            }
+            className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-chip bg-slate-100 px-3.5 py-2 text-[13px] font-bold text-slate-600 lg:flex-none ${
+              canAttach ? "cursor-pointer" : "cursor-not-allowed opacity-50"
+            }`}
+          >
             <ImageIcon size={16} />
-            이미지
-            <input type="file" accept="image/*" onChange={onPickImage} className="hidden" />
+            {uploading ? "업로드 중…" : "이미지"}
+            <input type="file" accept="image/*" onChange={onPickImage} disabled={!canAttach} className="hidden" />
           </label>
           <button
             onClick={() => void submit()}
-            disabled={!online}
+            disabled={!online || uploading}
             title={online ? undefined : "오프라인 — 연결 후 등록할 수 있어요"}
             className="min-h-[40px] flex-1 rounded-chip bg-brand px-5 py-2 text-[13px] font-extrabold text-white hover:bg-brand-hover disabled:opacity-50 lg:flex-none"
           >

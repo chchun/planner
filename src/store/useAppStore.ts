@@ -55,6 +55,8 @@ interface AppState {
   setSelectedDate: (d: number | null) => void;
 
   memos: Memo[];
+  /** 서버 Blob 저장소 설정 여부 — false면 이미지 첨부 비활성 (spec 005 R-41) */
+  blobEnabled: boolean;
   memoView: "card" | "list";
   setMemoView: (v: "card" | "list") => void;
   currentFolder: string;
@@ -92,6 +94,7 @@ export const useAppStore = create<AppState>((set, get) => {
         events: s.events,
         memos: s.memos,
         weekStats: s.weekStats,
+        blobEnabled: s.blobEnabled,
       };
       void saveSnapshot(data).catch(logErr);
     }, 500);
@@ -108,6 +111,7 @@ export const useAppStore = create<AppState>((set, get) => {
       events: data.events,
       memos: data.memos,
       weekStats: data.weekStats,
+      blobEnabled: data.blobEnabled ?? false,
       online: true,
       lastSyncAt: Date.now(),
     });
@@ -193,6 +197,7 @@ export const useAppStore = create<AppState>((set, get) => {
               events: snap.data.events,
               memos: snap.data.memos,
               weekStats: snap.data.weekStats,
+              blobEnabled: snap.data.blobEnabled ?? false,
               online: false,
               lastSyncAt: snap.savedAt,
             });
@@ -324,6 +329,7 @@ export const useAppStore = create<AppState>((set, get) => {
     setSelectedDate: (d) => set({ selectedDate: d }),
 
     memos: [],
+    blobEnabled: false,
     memoView: "card",
     setMemoView: (v) => set({ memoView: v }),
     currentFolder: "전체",

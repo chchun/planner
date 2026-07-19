@@ -3,7 +3,7 @@
 > 순서 주의: T41(Blob 이미지)은 로컬에서 단독 검증 가능 → 먼저. 이후 서버리스·Neon·배포.
 > 각 작업 = 체크 + 커밋. Claude Code CLI 세션이 바뀌어도 이 문서만 보고 이어갈 수 있게 DoD 명확히.
 
-- [ ] **T41. 메모 이미지 → Vercel Blob** (R-41)
+- [x] **T41. 메모 이미지 → Vercel Blob** (R-41)
   `@vercel/blob` 설치, `server/blob.ts`(put/del + blobEnabled), `POST /api/memos/image`,
   MemoComposer 업로드를 dataURL→파일 전송으로 변경, 메모 삭제 시 blob del(waitUntil 준비 전이면 그냥 await)
   *DoD: 로컬 .env에 BLOB_READ_WRITE_TOKEN 넣고 이미지 업로드 → memos.image에 URL 저장, bootstrap에 dataURL 없음, 새로고침 유지. 토큰 없으면 이미지 버튼 비활성*
