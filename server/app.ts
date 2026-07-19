@@ -1,9 +1,9 @@
 // Hono 앱 조립 (spec 005 R-42) — 로컬(index.ts)과 Vercel(api/[[...route]].ts)이 공유하는 순수 조립 함수.
 // 부팅 로직(initDb/seed/retry)은 여기 두지 않는다: 로컬은 index.ts, 프로덕션은 db:setup 스크립트·크론이 담당.
 import { Hono } from "hono";
-import { login, logout, requireAuth, type AuthUser } from "./auth";
-import { retryPendingSyncs } from "./gsync";
-import { api } from "./routes";
+import { login, logout, requireAuth, type AuthUser } from "./auth.js";
+import { retryPendingSyncs } from "./gsync.js";
+import { api } from "./routes.js";
 
 export type AppEnv = { Variables: { user: AuthUser } };
 

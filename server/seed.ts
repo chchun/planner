@@ -1,6 +1,6 @@
 // 시드 — 테이블이 비어 있을 때만 실행. Phase 1 mock(docs/SPEC.md §8)을 실제 오늘 기준으로 이식.
 import bcrypt from "bcryptjs";
-import { q } from "./db";
+import { q } from "./db.js";
 
 const day = (offset: number, h: number, m = 0): Date => {
   const d = new Date();

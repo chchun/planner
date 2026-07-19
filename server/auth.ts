@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { Context, Next } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { q } from "./db";
-import { isProd } from "./runtime";
+import { q } from "./db.js";
+import { isProd } from "./runtime.js";
 
 export interface AuthUser {
   id: string;

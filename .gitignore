@@ -16,3 +16,7 @@ pcookies.txt
 .env
 .env.bak
 *service-account*.json
+
+# Vercel CLI 링크 메타데이터·로컬 env (vercel link가 생성)
+.vercel
+.env.local

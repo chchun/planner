@@ -1,35 +1,38 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
-import type { AuthUser } from "./auth";
-import { blobEnabled, deleteBlobUrl, isBlobUrl, putMemoImage } from "./blob";
-import { q } from "./db";
-import { listGoogleEvents } from "./google";
-import { deleteTodoEvent, pushTodoEvent } from "./gsync";
-import { waitUntilCompat } from "./runtime";
+import type { AuthUser } from "./auth.js";
+import { blobEnabled, deleteBlobUrl, isBlobUrl, putMemoImage } from "./blob.js";
+import { q } from "./db.js";
+import { listGoogleEvents } from "./google.js";
+import { deleteTodoEvent, pushTodoEvent } from "./gsync.js";
+import { waitUntilCompat } from "./runtime.js";
 
 type Env = { Variables: { user: AuthUser } };
 
 export const api = new Hono<Env>();
 
-/** 이번 주 월요일 00:00 (서버 로컬 TZ = KST 전제, plan §리스크) */
-function mondayStart(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d;
-}
+// 집계 경계는 서버 TZ와 무관하게 KST로 계산한다 — Vercel 서버리스는 UTC이고 TZ env는 예약어라 설정 불가 (R-44)
+const KST_OFFSET_MS = 9 * 3_600_000;
+const DAY_MS = 86_400_000;
+
+/** 오늘 00:00 KST (UTC 시각으로 반환) */
 function todayStart(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return new Date(Math.floor((Date.now() + KST_OFFSET_MS) / DAY_MS) * DAY_MS - KST_OFFSET_MS);
+}
+/** 이번 주 월요일 00:00 KST */
+function mondayStart(): Date {
+  const today = todayStart();
+  const dowKst = (new Date(today.getTime() + KST_OFFSET_MS).getUTCDay() + 6) % 7;
+  return new Date(today.getTime() - dowKst * DAY_MS);
 }
 
 // ---- bootstrap: 로그인 후 초기 데이터 일괄 조회 ----
 api.get("/bootstrap", async (c) => {
   const monday = mondayStart();
   const today = todayStart();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nowKst = new Date(Date.now() + KST_OFFSET_MS);
+  const monthStart = new Date(Date.UTC(nowKst.getUTCFullYear(), nowKst.getUTCMonth(), 1) - KST_OFFSET_MS);
+  const nextMonth = new Date(Date.UTC(nowKst.getUTCFullYear(), nowKst.getUTCMonth() + 1, 1) - KST_OFFSET_MS);
 
   const subjects = await q<{ name: string; color: string; today_sec: number; week_sec: number }>(
     `SELECT s.name, s.color,
@@ -66,7 +69,7 @@ api.get("/bootstrap", async (c) => {
     "SELECT id, folder, color, text, image, done FROM memos WHERE deleted_at IS NULL ORDER BY created_at DESC",
   );
   const weekRows = await q<{ dow: number; sec: number }>(
-    `SELECT EXTRACT(ISODOW FROM started_at)::int - 1 AS dow,
+    `SELECT EXTRACT(ISODOW FROM started_at AT TIME ZONE 'Asia/Seoul')::int - 1 AS dow,
             SUM(EXTRACT(EPOCH FROM (ended_at - started_at)))::float AS sec
      FROM timer_sessions WHERE started_at >= $1 GROUP BY 1`,
     [monday],

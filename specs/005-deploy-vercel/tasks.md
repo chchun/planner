@@ -18,7 +18,7 @@
   `api` 진입점에서 부팅 로직 제거 확인
   *DoD: DATABASE_URL로 Neon에 스키마·시드 성공, 크론 엔드포인트가 비밀 헤더 검증 후 재시도*
 
-- [ ] **T44. Vercel 배포 설정 + 배포 E2E** (R-44)
+- [x] **T44. Vercel 배포 설정 + 배포 E2E** (R-44)
   `vercel.json`(빌드·crons·rewrite), `.env.example` 갱신, Vercel 프로젝트 env 등록, 프리뷰 배포
   *DoD: 배포본에서 로그인→메모 이미지 업로드/표시→새로고침 유지, 숙제 등록→구글 캘린더 반영, 캘린더 조회 표시*
 

@@ -259,14 +259,28 @@ npm run build       # tsc + vite build → dist/ (PWA sw.js + manifest 포함)
 npm run preview     # 빌드 결과 로컬 미리보기
 ```
 
-**운영 전 체크리스트**
-- [ ] `DATABASE_URL`로 실제 PostgreSQL 연결(서버 TZ는 `Asia/Seoul` 고정 권장 — 집계 경계 정확도)
-- [ ] 데모 비밀번호 변경
-- [ ] `GOOGLE_SERVICE_ACCOUNT_JSON` 등 비밀값을 배포 환경 시크릿으로 주입(`.env` 커밋 금지)
-- [ ] 프론트엔드를 HTTPS로 서빙, 세션 쿠키 동작 확인
-- [ ] iPad에서 홈 화면 설치 → 오프라인 동작·타이머·동기화 실기기 확인
+### Vercel 배포 (Phase 5)
 
-> Vercel 등 서버리스 배포 시에는 PGlite 대신 호스팅 Postgres가 필수이며, Hono를 서버리스 어댑터로 전환하고 부팅 시 실행 로직(재시도 등)을 Cron으로 옮겨야 한다. 별도 마이그레이션 문서 예정.
+프로덕션은 **정적 프론트(dist) + `/api` 서버리스 함수(Node) + Neon Postgres + Vercel Blob** 구성이다.
+로컬 개발 흐름(PGlite + `npm run server`/`npm run dev`)은 배포와 무관하게 그대로 동작한다.
+
+1. **Vercel 프로젝트 생성** — 이 GitHub repo를 연결(framework: Vite 자동 감지, `vercel.json` 포함됨)
+2. **스토리지 준비** — [Neon](https://neon.tech) 프로젝트(풀드/언풀드 연결 문자열), Vercel Storage → Blob 스토어 생성
+3. **환경변수 등록** (Vercel 프로젝트 Settings → Environment Variables)
+   - `DATABASE_URL` = Neon **풀드**(-pooler) 연결 문자열
+   - `BLOB_READ_WRITE_TOKEN` (스토어 프리픽스로 발급되면 `PLAN_BLOB_READ_WRITE_TOKEN`도 인식)
+   - `GOOGLE_SERVICE_ACCOUNT_JSON`(base64), `GCAL_FAMILY_ID/LABEL`, `GCAL_STUDENT_ID/LABEL`
+   - `CRON_SECRET` = 랜덤 문자열 (크론 엔드포인트 보호 — Vercel Cron이 Bearer로 자동 첨부)
+   - 시간대: `TZ`는 Vercel 예약 변수라 설정 불가 — 집계 경계(오늘/주/월)는 코드에서 KST로 계산한다
+4. **스키마·시드 1회 적용** — 로컬에서 `.env`에 `NEON_DATABASE_URL_UNPOOLED`(언풀드) 넣고 `npm run db:setup`
+5. **배포** — `git push`(연결된 repo면 자동) 또는 `npx vercel deploy --prod`
+6. **배포 후 확인** — 로그인 → 메모 이미지 업로드·새로고침 유지 → 숙제(납기) 등록 → 구글 캘린더 반영
+   - 캘린더 재시도 크론: `vercel.json`의 `0 18 * * *`(UTC) = KST 새벽 3시, Hobby 플랜은 1일 1회·실행 시각 ±1시간 오차 허용
+
+**운영 전 체크리스트**
+- [ ] 데모 비밀번호 변경
+- [ ] 배포 후 공부시간 집계(오늘/주간)가 KST 기준으로 맞는지 확인
+- [ ] iPad에서 홈 화면 설치 → 오프라인 동작·타이머·동기화 실기기 확인
 
 ---
 

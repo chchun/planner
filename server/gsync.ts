@@ -1,6 +1,6 @@
 // 숙제 push 상태 관리 (spec 004 R-32) — push 실패가 앱 동작을 막지 않는다
-import { q } from "./db";
-import { deleteEvent, gcalEnabled, insertHomeworkEvent, invalidateListCache } from "./google";
+import { q } from "./db.js";
+import { deleteEvent, gcalEnabled, insertHomeworkEvent, invalidateListCache } from "./google.js";
 
 /** 할일을 시윤학원 캘린더로 push하고 상태를 기록 (비동기 — 호출측은 기다리지 않아도 됨) */
 export async function pushTodoEvent(todoId: string, title: string, dueAt: Date): Promise<void> {
