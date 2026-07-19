@@ -12,7 +12,7 @@
   `bootstrap`의 plan을 오늘·timetable을 오늘 요일로 필터
   *DoD: curl로 날짜별 timetable/plan 조회, 계획 추가·삭제 확인. 회귀 없음*
 
-- [ ] **T63. 프론트 날짜 네비게이션 + 연동** (R-61, R-62, R-63)
+- [x] **T63. 프론트 날짜 네비게이션 + 연동** (R-61, R-62, R-63)
   `Planner/DateNav.tsx`(◀ 날짜 ▶ + 오늘 + 년월일 팝업), store `plannerDate`·`loadPlannerDate`·`addPlan`·`deletePlan`,
   `PlanChecklist` 추가/삭제 UI, repository 함수
   *DoD: 날짜 이동 시 요일 시간표·날짜 계획 갱신, 계획 추가/삭제, 오늘 복귀. 오프라인 시 이동 비활성*

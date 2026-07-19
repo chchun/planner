@@ -6,6 +6,7 @@ import {
 } from "../data/offline";
 import { hasSavedPassword } from "../data/rememberedAuth";
 import { repo } from "../data/repository";
+import { todayISO } from "../lib/date";
 import type {
   BootstrapData, CalendarEvent, Memo, PlanItem, Subject, Tab, TimerState, TimetableBlock, Todo, User,
 } from "../data/types";
@@ -47,6 +48,12 @@ interface AppState {
   createTodo: (input: { title: string; source: string; dueAt: string | null; subs: string[] }) => Promise<void>;
   togglePlan: (id: string) => void;
 
+  /** 플래너 날짜 네비게이션 (spec 006) — plan/timetable은 이 날짜 기준 */
+  plannerDate: string;
+  loadPlannerDate: (date: string) => Promise<void>;
+  addPlan: (input: { subject: string; goal: number; memo: string }) => Promise<void>;
+  deletePlan: (id: string) => void;
+
   calMode: "month" | "week";
   setCalMode: (m: "month" | "week") => void;
   filterSched: boolean;
@@ -87,6 +94,8 @@ export const useAppStore = create<AppState>((set, get) => {
     saveTimer = setTimeout(() => {
       const s = get();
       if (s.status !== "ready" || !s.user) return;
+      // 스냅샷은 항상 '오늘' 데이터여야 함 — 다른 날짜를 보는 중엔 저장하지 않는다 (spec 006)
+      if (s.plannerDate !== todayISO()) return;
       const data: BootstrapData = {
         user: s.user,
         subjects: s.subjects,
@@ -116,6 +125,7 @@ export const useAppStore = create<AppState>((set, get) => {
       weekStats: data.weekStats,
       weekBySubject: data.weekBySubject ?? {},
       blobEnabled: data.blobEnabled ?? false,
+      plannerDate: todayISO(), // bootstrap의 plan/timetable은 오늘 기준
       online: true,
       lastSyncAt: Date.now(),
     });
@@ -324,6 +334,32 @@ export const useAppStore = create<AppState>((set, get) => {
       sendOrQueue(() => repo.setPlanDone(id, done), {
         entityType: "plan", entityId: id, operation: "toggle", payload: { done },
       });
+    },
+
+    plannerDate: todayISO(),
+    loadPlannerDate: async (date) => {
+      // 날짜 이동은 온라인 전용 (spec 006 — 오프라인 스냅샷은 오늘만)
+      if (!get().online) return;
+      try {
+        const { timetable, plan } = await repo.plannerByDate(date);
+        set({ plannerDate: date, timetable, plan });
+        persistSnapshot(); // 오늘로 복귀한 경우에만 실제 저장됨 (내부 가드)
+      } catch (err) {
+        if (err instanceof NetworkError) set({ online: false });
+        else logErr(err);
+      }
+    },
+    addPlan: async (input) => {
+      // 신규 생성은 온라인 전용 (spec 003 정책 유지)
+      const date = get().plannerDate;
+      const { id } = await repo.createPlan({ date, ...input });
+      set((s) => ({ plan: [...s.plan, { id, subject: input.subject, goal: input.goal, memo: input.memo, done: false }] }));
+      persistSnapshot();
+    },
+    deletePlan: (id) => {
+      set((s) => ({ plan: s.plan.filter((p) => p.id !== id) }));
+      persistSnapshot();
+      repo.deletePlan(id).catch(logErr);
     },
 
     calMode: "month",

@@ -1,7 +1,7 @@
 // 데이터 접근 계층 (constitution §3) — Phase 2: 백엔드 API 구현체.
 // UI는 스토어를 통해 이 함수들만 사용한다. 서버 스키마는 server/db.ts 참조.
 import { del, get, patch, post, postForm } from "./api";
-import type { BootstrapData, User } from "./types";
+import type { BootstrapData, PlanItem, TimetableBlock, User } from "./types";
 
 export const repo = {
   login: (username: string, password: string) =>
@@ -17,6 +17,12 @@ export const repo = {
   setSubtaskDone: (todoId: string, subId: string, done: boolean) =>
     patch(`/api/todos/${todoId}/subtasks/${subId}`, { done }),
   setPlanDone: (id: string, done: boolean) => patch(`/api/plan/${id}`, { done }),
+  /** 날짜별 플래너 조회 — 요일 시간표 + 날짜 계획 (spec 006) */
+  plannerByDate: (date: string) =>
+    get<{ timetable: TimetableBlock[]; plan: PlanItem[] }>(`/api/planner?date=${date}`),
+  createPlan: (input: { date: string; subject: string; goal: number; memo: string }) =>
+    post<{ id: string }>("/api/plan", input),
+  deletePlan: (id: string) => del(`/api/plan/${id}`),
 
   createMemo: (input: { folder: string; color: string; text: string; image: string | null }) =>
     post<{ id: string }>("/api/memos", input),

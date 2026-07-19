@@ -50,3 +50,30 @@ export function currentWeekDays(): number[] {
 export function mondayIndexOfToday(): number {
   return (new Date().getDay() + 6) % 7;
 }
+
+// ---- ISO(YYYY-MM-DD) 날짜 유틸 — 플래너 날짜 네비게이션 (spec 006) ----
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** 오늘 (단말 로컬 = KST 전제) */
+export function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function isoToDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** iso 날짜에서 days만큼 이동 */
+export function shiftISO(iso: string, days: number): string {
+  const d = isoToDate(iso);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** "2026년 7월 19일 (일)" */
+export function isoLabel(iso: string): string {
+  const d = isoToDate(iso);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAY_LABELS[d.getDay()]})`;
+}
