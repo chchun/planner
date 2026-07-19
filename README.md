@@ -89,12 +89,27 @@ iPad가 오프라인일 때도 조회·타이머·완료 체크가 동작하고,
 
 ## 사전 준비
 
+### 로컬 개발 (필수)
 - **Node.js 20 이상** (`process.loadEnvFile` 사용). 확인: `node --version`
 - **npm** (Node에 포함)
-- (선택) **Google 서비스 계정 키** — 캘린더 연동을 쓸 경우에만. 없어도 앱은 정상 동작(연동만 비활성)
-- (운영 시) **PostgreSQL** 인스턴스 — 개발은 PGlite라 불필요
 
 > PostgreSQL이나 Docker를 로컬에 설치할 필요가 **없다.** 개발용 DB(PGlite)는 npm 설치만으로 동작한다.
+
+### Google Calendar 연동용 (선택 — 없어도 앱은 정상, 연동만 비활성)
+- **Google Cloud 프로젝트** + **Google Calendar API 사용 설정**
+- **서비스 계정** 생성 + 키(JSON) 발급 → base64 인코딩해 `GOOGLE_SERVICE_ACCOUNT_JSON`으로
+- 연동할 **캘린더 2개**(가족일정·시윤학원)를 서비스 계정 이메일(`client_email`)에
+  **"일정 변경" 권한으로 공유** + 각 캘린더 ID(`...@group.calendar.google.com`) 확보
+- 상세 절차: [Google Calendar 연동 설정](#google-calendar-연동-설정)
+
+### Vercel 배포용 (선택 — 배포할 때만)
+- **GitHub 저장소** (Vercel 프로젝트에 연결)
+- **Vercel 계정** + 프로젝트 생성 (framework: Vite 자동 감지)
+- **Neon 계정** + 프로젝트 생성 → 연결 문자열 2개 확보: **풀드**(`-pooler`, 런타임용) / **언풀드**(스키마 셋업용)
+- **Vercel Blob 스토어** 생성 (Storage → Blob) → `BLOB_READ_WRITE_TOKEN` 발급
+  (스토어 이름 프리픽스가 붙어 `PLAN_BLOB_*`로 발급돼도 코드가 인식)
+- **CRON_SECRET**용 랜덤 문자열 (캘린더 재시도 크론 엔드포인트 보호)
+- 상세 절차: [빌드 · 배포](#빌드--배포) 및 `docs/vercel_deploy.md`(현재 배포 구조 문서)
 
 ---
 
@@ -140,13 +155,16 @@ npm run dev
 
 | 변수 | 필수 | 설명 |
 |---|---|---|
-| `DATABASE_URL` | 아니오 | 설정하면 실제 PostgreSQL 사용, 미설정이면 PGlite(`./data/pg`) |
-| `PORT` | 아니오 | API 서버 포트(기본 3001) |
+| `DATABASE_URL` | 아니오 | 설정하면 실제 PostgreSQL 사용, 미설정이면 PGlite(`./data/pg`). **Vercel엔 Neon 풀드 URL로 필수** |
+| `PORT` | 아니오 | API 서버 포트(기본 3001, 로컬 전용) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | 아니오 | 서비스 계정 키 JSON을 **base64 인코딩**한 값(원본 JSON 문자열도 허용) |
 | `GCAL_FAMILY_ID` / `GCAL_FAMILY_LABEL` | 아니오 | 가족일정 캘린더 ID / 표시 라벨 |
 | `GCAL_STUDENT_ID` / `GCAL_STUDENT_LABEL` | 아니오 | 시윤학원 캘린더 ID / 표시 라벨 |
+| `BLOB_READ_WRITE_TOKEN` | 아니오 | Vercel Blob 토큰 — 메모 이미지 업로드용. 없으면 이미지 첨부 버튼 비활성(`PLAN_BLOB_READ_WRITE_TOKEN` 폴백 인식) |
+| `CRON_SECRET` | 아니오 | `/api/cron/retry-gcal` 보호용 비밀값. **Vercel 배포 시 필수** |
+| `NEON_DATABASE_URL_UNPOOLED` | 아니오 | 로컬 전용 — `npm run db:setup`이 Neon에 스키마·시드를 적용할 때 사용(언풀드/직접 연결) |
 
-키 관련 변수가 없으면 캘린더 연동만 꺼지고 나머지 기능은 모두 동작한다.
+키 관련 변수가 없으면 해당 기능(캘린더 연동·이미지 첨부)만 꺼지고 나머지는 모두 동작한다.
 
 ---
 
@@ -293,19 +311,34 @@ npm run preview     # 빌드 결과 로컬 미리보기
 |---|---|
 | `specs/constitution.md` | 프로젝트 헌장 — 모든 spec보다 우선하는 불변 원칙 |
 | `specs/00N-*/{spec,plan,tasks}.md` | Phase별 요구사항 / 기술 설계 / 작업 목록 |
-| `docs/ROADMAP.md` | Phase 2~4 아키텍처 방향 |
+| `docs/ROADMAP.md` | Phase 2~5 아키텍처 방향 |
 | `docs/SPEC.md` · `docs/TOKENS.md` | 화면 상세 명세 · 디자인 토큰 |
 | `docs/prototype.html` | 실행 가능한 목업 — **시각 기준의 원본** |
+| `docs/vercel_deploy.md` | **현재 Vercel 배포 구조** — 계정/프로젝트, Neon·Blob 저장 내용, 환경변수 |
 | `CLAUDE.md` | 코드 작성 규칙(세션 자동 로드) |
 
-**구현 이력**
+**구현 이력 — Phase 1~5 전체 완료 (2026-07)**
 
-| Phase | 내용 | 커밋 |
-|---|---|---|
-| 1 | 프론트엔드 UI (mock 데이터) | `a2605f4` |
-| 2 | 백엔드 + 전 기능 서버 연동 | `e482207` |
-| 3 | iPad 오프라인 + PWA | `4511e20` |
-| 4 | Google Calendar 단방향 연동 | `9628e2e` |
+| Phase | 내용 | 주요 산출물 | 커밋 |
+|---|---|---|---|
+| 1 | 프론트엔드 UI (mock 데이터) — 대시보드·플래너·타이머·캘린더·메모, iPad 우선 3단말 레이아웃 | `src/` 전체, repository 계층 격리 | `a2605f4` |
+| 2 | 백엔드 + 전 기능 서버 연동 — Hono API, PGlite/pg 이중 어댑터, 세션 인증, 시드 | `server/`, bootstrap API | `e482207` |
+| 3 | iPad 오프라인 + PWA — IndexedDB 스냅샷, 완료체크·타이머 큐잉, 동기화 상태 표시 | `src/data/offline.ts`, SW | `4511e20` |
+| 4 | Google Calendar 단방향 연동 — 서비스 계정 JWT, 숙제 push/삭제, 조회 병합, 재시도 | `server/google.ts`, `gsync.ts` | `9628e2e` |
+| 5 | Vercel 배포 — Blob 이미지, 서버리스 전환, Neon, 크론 재시도, 오프라인 이미지 캐싱 | `api/index.ts`, `vercel.json`, `scripts/db-setup.ts` | `fc950b1`~`6a275ca` |
+
+- **standalone 최종본 태그**: [`v1.0_standalone`](https://github.com/chchun/planner/releases/tag/v1.0_standalone) — Phase 5 서버리스 전환 직전(PGlite/Node 단독 실행) 스냅샷
+- **프로덕션**: https://planner-three-livid.vercel.app (구조는 `docs/vercel_deploy.md`)
+
+**남은 항목 (백로그 — `docs/ROADMAP.md` 참조)**
+
+- [ ] 데모 비밀번호 변경 (공개 URL — 우선순위 높음)
+- [ ] iPad 실기기: 홈 화면 설치(PWA) → 오프라인·타이머·동기화·이미지 캐시 확인
+- [ ] 오프라인 일정 편집 + version 기반 충돌 감지 + 충돌 선택 UI
+- [ ] Google Calendar 양방향 동기화 (push notification 웹훅)
+- [ ] 반복일정 recurrence_rule + 예외 테이블 방식 전환
+- [ ] 학생 다수/선생님 조회 → 권한 테이블 도입
+- [ ] 커스텀 도메인, CI 파이프라인 (Phase 5 범위 제외 항목)
 
 ---
 
