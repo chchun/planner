@@ -5,7 +5,7 @@ import { login, logout, requireAuth, type AuthUser } from "./auth.js";
 import { initDb } from "./db.js";
 import { retryPendingSyncs } from "./gsync.js";
 import { api } from "./routes.js";
-import { seedIfEmpty } from "./seed.js";
+import { migrateTimetableWeekly, seedIfEmpty } from "./seed.js";
 
 export type AppEnv = { Variables: { user: AuthUser } };
 
@@ -34,6 +34,7 @@ export function buildApp(): Hono<AppEnv> {
   app.get("/api/admin/db-setup", async (c) => {
     if (!cronAuthorized(c)) return c.json({ error: "unauthorized" }, 401);
     await initDb();
+    await migrateTimetableWeekly();
     await seedIfEmpty();
     return c.json({ ok: true });
   });

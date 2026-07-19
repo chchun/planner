@@ -2,6 +2,34 @@
 import bcrypt from "bcryptjs";
 import { q } from "./db.js";
 
+// 요일별 시간표 템플릿 (spec 006) — dow 0=월 … 6=일. [dow, 과목, 시작시, 끝시]
+const WEEKLY_TIMETABLE: Array<[number, string, number, number]> = [
+  [0, "국어", 7, 8], [0, "수학", 9, 11], [0, "영어", 13, 14.5], [0, "과학", 16, 18], [0, "수학", 20, 22],
+  [1, "영어", 7, 8], [1, "국어", 9, 11], [1, "수학", 13, 15], [1, "사회", 16, 18], [1, "영어", 20, 22],
+  [2, "수학", 7, 9], [2, "과학", 10, 12], [2, "국어", 14, 15.5], [2, "영어", 16, 18], [2, "수학", 20, 22],
+  [3, "국어", 7, 8], [3, "사회", 9, 11], [3, "영어", 13, 15], [3, "과학", 16, 18], [3, "수학", 20, 22],
+  [4, "수학", 7, 9], [4, "영어", 10, 12], [4, "국어", 14, 16], [4, "과학", 16.5, 18], [4, "영어", 20, 22],
+  [5, "수학", 9, 12], [5, "영어", 13, 15], [5, "국어", 16, 18], // 토
+  [6, "과학", 10, 12], [6, "사회", 14, 16], [6, "수학", 20, 22], // 일
+];
+
+async function insertWeeklyTimetable(): Promise<void> {
+  for (const [dow, subject, start, end] of WEEKLY_TIMETABLE) {
+    await q("INSERT INTO timetable_blocks (subject, start_h, end_h, dow) VALUES ($1,$2,$3,$4)", [
+      subject, start, end, dow,
+    ]);
+  }
+}
+
+/** 기존 DB의 무요일 시간표(dow IS NULL)를 요일 템플릿으로 교체 — 멱등 (spec 006 마이그레이션) */
+export async function migrateTimetableWeekly(): Promise<void> {
+  const [row] = await q<{ n: string }>("SELECT COUNT(*)::text AS n FROM timetable_blocks WHERE dow IS NULL");
+  if (Number(row.n) === 0) return; // 이미 요일화됨
+  await q("DELETE FROM timetable_blocks WHERE dow IS NULL");
+  await insertWeeklyTimetable();
+  console.log("[migrate] timetable → 요일 템플릿으로 교체");
+}
+
 const day = (offset: number, h: number, m = 0): Date => {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -52,14 +80,14 @@ export async function seedIfEmpty(): Promise<void> {
   await todo("화학 실험 보고서 작성", "high", "학교", false, day(-1, 23, 59));
   await todo("수학 문제집 30문항", "mid", "수학 학원", false, day(-2, 22));
 
-  await q(`INSERT INTO plan_items (subject, goal_min, memo, done, sort) VALUES
-    ('수학',120,'미적분 문제집 p.45-50',false,0),
-    ('영어',60,'단어 100개 + 독해 2지문',true,1),
-    ('국어',45,'비문학 지문 2개 풀이',false,2),
-    ('과학',90,'통합과학 수행평가 자료',false,3)`);
+  // 계획은 오늘(plan_date) 기준 (spec 006)
+  await q(`INSERT INTO plan_items (subject, goal_min, memo, done, sort, plan_date) VALUES
+    ('수학',120,'미적분 문제집 p.45-50',false,0,CURRENT_DATE),
+    ('영어',60,'단어 100개 + 독해 2지문',true,1,CURRENT_DATE),
+    ('국어',45,'비문학 지문 2개 풀이',false,2,CURRENT_DATE),
+    ('과학',90,'통합과학 수행평가 자료',false,3,CURRENT_DATE)`);
 
-  await q(`INSERT INTO timetable_blocks (subject, start_h, end_h) VALUES
-    ('국어',7,8),('수학',9,11),('영어',13,14.5),('과학',16,18),('수학',20,22)`);
+  await insertWeeklyTimetable();
 
   // 이번 달 일정 — mock의 날짜 간격을 오늘 기준 상대 배치로 이식
   const ev = (offset: number, h: number, m: number, title: string, type: string) =>

@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS memos (
 ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_event_id TEXT;
 ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_sync_status TEXT;
 ALTER TABLE todos ADD COLUMN IF NOT EXISTS google_sync_error TEXT;
+-- spec 006: 계획은 날짜별, 시간표는 요일(dow 0=월…6=일) 템플릿
+ALTER TABLE plan_items ADD COLUMN IF NOT EXISTS plan_date DATE NOT NULL DEFAULT CURRENT_DATE;
+ALTER TABLE timetable_blocks ADD COLUMN IF NOT EXISTS dow INT;
 CREATE TABLE IF NOT EXISTS timer_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),

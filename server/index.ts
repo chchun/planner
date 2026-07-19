@@ -9,7 +9,7 @@ try {
 }
 
 const { initDb } = await import("./db");
-const { seedIfEmpty } = await import("./seed");
+const { seedIfEmpty, migrateTimetableWeekly } = await import("./seed");
 const { buildApp } = await import("./app");
 const { retryPendingSyncs } = await import("./gsync");
 const { gcalEnabled } = await import("./google");
@@ -18,6 +18,7 @@ const app = buildApp();
 const PORT = Number(process.env.PORT ?? 3001);
 
 initDb()
+  .then(migrateTimetableWeekly)
   .then(seedIfEmpty)
   .then(() => {
     serve({ fetch: app.fetch, port: PORT });

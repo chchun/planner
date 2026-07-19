@@ -15,11 +15,12 @@ if (!target) {
 process.env.DATABASE_URL = target;
 
 const { initDb } = await import("../server/db");
-const { seedIfEmpty } = await import("../server/seed");
+const { seedIfEmpty, migrateTimetableWeekly } = await import("../server/seed");
 
 console.log(`[db:setup] 대상: ${new URL(target).host}`);
 await initDb();
 console.log("[db:setup] 스키마 적용 완료");
+await migrateTimetableWeekly();
 await seedIfEmpty();
 console.log("[db:setup] 완료");
 process.exit(0); // pg 풀이 프로세스를 붙잡으므로 명시 종료
