@@ -315,6 +315,8 @@ npm run preview     # 빌드 결과 로컬 미리보기
 | `docs/SPEC.md` · `docs/TOKENS.md` | 화면 상세 명세 · 디자인 토큰 |
 | `docs/prototype.html` | 실행 가능한 목업 — **시각 기준의 원본** |
 | `docs/vercel_deploy.md` | **현재 Vercel 배포 구조** — 계정/프로젝트, Neon·Blob 저장 내용, 환경변수 |
+| `docs/CHANGELOG.md` | 날짜별 변경 이력 |
+| `docs/TROUBLESHOOTING.md` | 운영 문제 현상·원인·해결 기록 |
 | `CLAUDE.md` | 코드 작성 규칙(세션 자동 로드) |
 
 **구현 이력 — Phase 1~5 전체 완료 (2026-07)**
