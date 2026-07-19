@@ -1,5 +1,5 @@
+// 로컬 전용 진입점 — node-server + 부팅 로직(initDb/seed/재시도). Vercel 진입점은 api/[[...route]].ts
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
 
 // .env 로드 (없으면 무시) — google.ts가 env를 읽기 전에 실행되어야 하므로 최상단
 try {
@@ -10,21 +10,11 @@ try {
 
 const { initDb } = await import("./db");
 const { seedIfEmpty } = await import("./seed");
-const { login, logout, requireAuth } = await import("./auth");
-const { api } = await import("./routes");
+const { buildApp } = await import("./app");
 const { retryPendingSyncs } = await import("./gsync");
 const { gcalEnabled } = await import("./google");
-type AuthUser = import("./auth").AuthUser;
 
-const app = new Hono<{ Variables: { user: AuthUser } }>();
-
-app.post("/api/auth/login", login);
-app.post("/api/auth/logout", logout);
-app.get("/api/auth/me", requireAuth, (c) => c.json({ user: c.get("user") }));
-
-app.use("/api/*", requireAuth);
-app.route("/api", api);
-
+const app = buildApp();
 const PORT = Number(process.env.PORT ?? 3001);
 
 initDb()

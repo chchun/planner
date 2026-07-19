@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import type { Context, Next } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { q } from "./db";
+import { isProd } from "./runtime";
 
 export interface AuthUser {
   id: string;
@@ -33,6 +34,7 @@ export async function login(c: Context) {
     sameSite: "Lax",
     path: "/",
     maxAge: SESSION_DAYS * 86400,
+    secure: isProd(), // 프로덕션(HTTPS)에서만 — 로컬 http 개발은 유지 (R-42)
   });
   return c.json({ user: await userById(user.id) });
 }

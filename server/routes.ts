@@ -5,6 +5,7 @@ import { blobEnabled, deleteBlobUrl, isBlobUrl, putMemoImage } from "./blob";
 import { q } from "./db";
 import { listGoogleEvents } from "./google";
 import { deleteTodoEvent, pushTodoEvent } from "./gsync";
+import { waitUntilCompat } from "./runtime";
 
 type Env = { Variables: { user: AuthUser } };
 
@@ -102,8 +103,8 @@ api.post("/todos", async (c) => {
     "INSERT INTO todos (title, prio, source, done, due_at, google_sync_status) VALUES ($1,$2,$3,false,$4,$5) RETURNING id",
     [title, b.prio ?? "mid", b.source ?? "기타", dueAt, dueAt ? "pending" : null],
   );
-  // 시윤학원 캘린더 push — 응답을 막지 않음 (R-32)
-  if (dueAt) void pushTodoEvent(t.id, title, new Date(dueAt));
+  // 시윤학원 캘린더 push — 응답을 막지 않되 서버리스에선 완료 보장 (R-32, R-42)
+  if (dueAt) waitUntilCompat(pushTodoEvent(t.id, title, new Date(dueAt)));
   const subs: Array<{ id: string; title: string; done: boolean }> = [];
   const titles: string[] = Array.isArray(b.subs) ? b.subs : [];
   for (let i = 0; i < titles.length; i++) {
@@ -134,7 +135,7 @@ api.patch("/todos/:id/subtasks/:sid", async (c) => {
 
 api.delete("/todos/:id", async (c) => {
   const id = c.req.param("id");
-  void deleteTodoEvent(id); // 구글 이벤트도 삭제 (실패해도 앱 삭제 진행)
+  waitUntilCompat(deleteTodoEvent(id)); // 구글 이벤트도 삭제 (실패해도 앱 삭제 진행)
   await q("UPDATE todos SET deleted_at=NOW() WHERE id=$1", [id]);
   return c.json({ ok: true });
 });
@@ -189,9 +190,9 @@ api.delete("/memos/:id", async (c) => {
     "UPDATE memos SET deleted_at=NOW() WHERE id=$1 RETURNING image",
     [c.req.param("id")],
   );
-  // Blob 파일 정리 — 실패해도 삭제는 완료된 상태 (T42에서 waitUntil로 전환 예정)
+  // Blob 파일 정리 — 실패해도 삭제는 완료된 상태, 응답을 막지 않음 (R-41, R-42)
   const image = m?.image ?? null;
-  if (isBlobUrl(image)) await deleteBlobUrl(image);
+  if (isBlobUrl(image)) waitUntilCompat(deleteBlobUrl(image));
   return c.json({ ok: true });
 });
 

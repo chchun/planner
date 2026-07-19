@@ -7,7 +7,8 @@ export interface Queryable {
   query(sql: string, params?: unknown[]): Promise<{ rows: unknown[] }>;
 }
 
-let db: Queryable;
+let db: Queryable | undefined;
+let connecting: Promise<Queryable> | undefined;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -95,18 +96,30 @@ CREATE TABLE IF NOT EXISTS timer_sessions (
 );
 `;
 
-export async function initDb(): Promise<void> {
-  const url = process.env.DATABASE_URL;
-  if (url) {
-    const pg = await import("pg");
-    const pool = new pg.default.Pool({ connectionString: url });
-    db = pool;
-  } else {
-    mkdirSync("./data/pg", { recursive: true });
-    db = new PGlite("./data/pg");
+/** 연결만 수립 (DDL 없음) — 서버리스는 q()가 이걸 통해 지연 연결한다. 모듈 스코프라 웜 인스턴스에서 재사용 */
+async function getDb(): Promise<Queryable> {
+  if (db) return db;
+  if (!connecting) {
+    connecting = (async () => {
+      const url = process.env.DATABASE_URL;
+      if (url) {
+        const pg = await import("pg");
+        db = new pg.default.Pool({ connectionString: url });
+      } else {
+        mkdirSync("./data/pg", { recursive: true });
+        db = new PGlite("./data/pg");
+      }
+      return db;
+    })();
   }
+  return connecting;
+}
+
+/** 스키마 생성 포함 부팅 — 로컬(index.ts)과 db:setup 스크립트에서만 호출. 서버리스 진입점에선 호출 금지 (R-43) */
+export async function initDb(): Promise<void> {
+  const d = await getDb();
   for (const stmt of SCHEMA.split(";")) {
-    if (stmt.trim()) await db.query(stmt);
+    if (stmt.trim()) await d.query(stmt);
   }
 }
 
@@ -115,6 +128,6 @@ export async function q<T = Record<string, unknown>>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  const r = await db.query(sql, params);
+  const r = await (await getDb()).query(sql, params);
   return r.rows as T[];
 }
