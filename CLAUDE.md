@@ -28,6 +28,7 @@ Phase 1은 **React + TypeScript + Tailwind CSS** 프론트엔드(mock 데이터)
 | `docs/TOKENS.md` | 디자인 토큰 → `tailwind.config` 매핑 |
 | `docs/prototype.html` | 실행 가능한 목업. **시각 기준의 원본** |
 | `docs/ROADMAP.md` | Phase 2~4 아키텍처 방향 (백엔드/오프라인/Google Calendar) |
+| `docs/BACKLOG.md` | 기능 백로그 — 아이디어 누적·우선순위·상태 관리. 새 spec은 여기서 선정 |
 
 ## 기술 규칙
 - React 18 + TypeScript(strict), Tailwind CSS, Vite. 폰트는 Pretendard
