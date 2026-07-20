@@ -29,6 +29,7 @@ Phase 1은 **React + TypeScript + Tailwind CSS** 프론트엔드(mock 데이터)
 | `docs/prototype.html` | 실행 가능한 목업. **시각 기준의 원본** |
 | `docs/ROADMAP.md` | Phase 2~4 아키텍처 방향 (백엔드/오프라인/Google Calendar) |
 | `docs/BACKLOG.md` | 기능 백로그 — 아이디어 누적·우선순위·상태 관리. 새 spec은 여기서 선정 |
+| `docs/confluence/` | Confluence 페이지 로컬 미러(md) — Confluence 페이지를 만들거나 수정하면 **반드시 같은 내용의 md 파일을 여기에 함께 갱신**한다 (GitHub에서도 볼 수 있게 복수 관리). Confluence 문서는 Claude가 아니라 **나중 사람을 위한 안내서**이므로 초급 사용자 눈높이로 작성한다 |
 
 ## 기술 규칙
 - React 18 + TypeScript(strict), Tailwind CSS, Vite. 폰트는 Pretendard
