@@ -1,10 +1,21 @@
 import { getToday, currentWeekDays } from "../../lib/date";
 import { pad2 } from "../../lib/time";
-import type { DayEvent } from "../../data/types";
+import type { DayEvent, EventType } from "../../data/types";
 import { useAppStore } from "../../store/useAppStore";
 import { MonthGrid } from "./MonthGrid";
 import { WeekGrid } from "./WeekGrid";
+import { AgendaList } from "./AgendaList";
 import { DayDetailPanel, DayBottomSheet } from "./DayDetail";
+
+/** 출처·종류별 이벤트 색 (spec 007 R-74) — 주간/일정/상세가 공유 */
+function eventColor(type: EventType, source?: string): string {
+  if (type === "hw") return "#f97316";
+  if (source === "google-family") return "#10b981";
+  if (source === "google-student") return "#8b5cf6";
+  return "#3b82f6";
+}
+
+const VIEW_LABELS = { month: "월", week: "주", agenda: "일정" } as const;
 
 function FilterChip({
   on,
@@ -46,19 +57,27 @@ export function Calendar() {
     const d = new Date(e.startAt);
     if (d.getFullYear() !== today.year || d.getMonth() + 1 !== today.month) continue;
     const day = d.getDate();
+    const end = e.endAt ? new Date(e.endAt) : null;
+    // 자정을 넘기는 종료는 그 날 안에서 그리도록 24:00으로 클램프
+    const crossesMidnight = end != null && end.getDate() !== day;
+    const endMin = end ? (crossesMidnight ? 24 * 60 : end.getHours() * 60 + end.getMinutes()) : null;
     (events[day] ??= []).push({
       time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+      endTime: end ? (crossesMidnight ? "24:00" : `${pad2(end.getHours())}:${pad2(end.getMinutes())}`) : null,
+      startMin: d.getHours() * 60 + d.getMinutes(),
+      endMin,
       title: e.title,
       type: e.type,
+      color: eventColor(e.type, e.source),
     });
   }
-  for (const list of Object.values(events)) list.sort((a, b) => a.time.localeCompare(b.time));
+  for (const list of Object.values(events)) list.sort((a, b) => a.startMin - b.startMin);
 
   const week = currentWeekDays();
   const rangeLabel =
-    calMode === "month"
-      ? `${today.year}년 ${today.month}월`
-      : `${today.month}월 ${week[0]}일 - ${week[week.length - 1]}일`;
+    calMode === "week"
+      ? `${today.month}월 ${week[0]}일 - ${week[week.length - 1]}일`
+      : `${today.year}년 ${today.month}월`;
 
   return (
     <div
@@ -71,7 +90,7 @@ export function Calendar() {
           <div className="flex items-center gap-3">
             <div className="text-lg font-extrabold text-slate-900 lg:text-[19px]">{rangeLabel}</div>
             <div className="flex rounded-[9px] bg-slate-100 p-[3px]">
-              {(["month", "week"] as const).map((m) => (
+              {(["month", "week", "agenda"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setCalMode(m)}
@@ -79,7 +98,7 @@ export function Calendar() {
                     calMode === m ? "bg-white text-brand" : "text-slate-400"
                   }`}
                 >
-                  {m === "month" ? "월" : "주"}
+                  {VIEW_LABELS[m]}
                 </button>
               ))}
             </div>
@@ -95,14 +114,18 @@ export function Calendar() {
           </div>
         </div>
 
-        {calMode === "month" ? (
+        {calMode === "month" && (
           <MonthGrid events={events} filterSched={filterSched} filterHw={filterHw} />
-        ) : (
+        )}
+        {calMode === "week" && (
           <WeekGrid events={events} filterSched={filterSched} filterHw={filterHw} />
+        )}
+        {calMode === "agenda" && (
+          <AgendaList events={events} filterSched={filterSched} filterHw={filterHw} />
         )}
       </section>
 
-      {/* 상세 패널/바텀시트는 월간 뷰 전용 — 주간 뷰는 칸에 세부를 직접 표시 (SPEC §3) */}
+      {/* 상세 패널/바텀시트는 월간 뷰 전용 — 주간·일정 뷰는 칸에 세부를 직접 표시 (SPEC §3) */}
       {calMode === "month" && (
         <>
           <div className="hidden lg:block">

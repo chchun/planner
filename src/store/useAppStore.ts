@@ -54,8 +54,8 @@ interface AppState {
   addPlan: (input: { subject: string; goal: number; memo: string }) => Promise<void>;
   deletePlan: (id: string) => void;
 
-  calMode: "month" | "week";
-  setCalMode: (m: "month" | "week") => void;
+  calMode: "month" | "week" | "agenda";
+  setCalMode: (m: "month" | "week" | "agenda") => void;
   filterSched: boolean;
   filterHw: boolean;
   toggleFilterSched: () => void;

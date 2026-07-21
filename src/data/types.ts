@@ -76,15 +76,25 @@ export interface CalendarEvent {
   type: EventType;
   /** ISO */
   startAt: string;
+  /** ISO — 종료. 마감형 이벤트는 null (spec 007) */
+  endAt?: string | null;
   /** 출처 — local | google-family | google-student (spec 004) */
   source?: string;
 }
 
-/** 캘린더 화면용 — 일(day) 기준으로 정리된 이벤트 */
+/** 캘린더 화면용 — 일(day) 기준으로 정리된 이벤트. 색·분(min) 값은 index에서 미리 계산 (spec 007) */
 export interface DayEvent {
   time: string;
+  /** "HH:MM" — 종료 없으면 null */
+  endTime: string | null;
+  /** 자정 기준 시작 분 — 주간 타임그리드 배치용 */
+  startMin: number;
+  /** 자정 기준 종료 분 — 없으면 null(기본 1시간 블록) */
+  endMin: number | null;
   title: string;
   type: EventType;
+  /** 출처·종류별 표시 색 (R-74) */
+  color: string;
 }
 
 export interface Memo {

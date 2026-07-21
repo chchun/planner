@@ -61,7 +61,7 @@ api.get("/bootstrap", async (c) => {
      WHERE dow = EXTRACT(ISODOW FROM (NOW() AT TIME ZONE 'Asia/Seoul'))::int - 1 ORDER BY start_h`,
   );
   const events = await q(
-    `SELECT id, title, type, start_at FROM calendar_events
+    `SELECT id, title, type, start_at, end_at FROM calendar_events
      WHERE deleted_at IS NULL AND start_at >= $1 AND start_at < $2 ORDER BY start_at`,
     [monthStart, nextMonth],
   );
@@ -103,8 +103,8 @@ api.get("/bootstrap", async (c) => {
     plan: plan.map((p) => ({ id: p.id, subject: p.subject, goal: p.goal_min, memo: p.memo, done: p.done })),
     timetable,
     events: [
-      ...events.map((e) => ({ id: e.id, title: e.title, type: e.type, startAt: e.start_at, source: "local" })),
-      ...googleEvents.map((e) => ({ id: e.id, title: e.title, type: "sched", startAt: e.startAt, source: e.source })),
+      ...events.map((e) => ({ id: e.id, title: e.title, type: e.type, startAt: e.start_at, endAt: e.end_at, source: "local" })),
+      ...googleEvents.map((e) => ({ id: e.id, title: e.title, type: "sched", startAt: e.startAt, endAt: e.endAt, source: e.source })),
     ],
     memos,
     weekStats: weekStats.map(Math.round),

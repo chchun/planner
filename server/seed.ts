@@ -89,19 +89,25 @@ export async function seedIfEmpty(): Promise<void> {
 
   await insertWeeklyTimetable();
 
-  // 이번 달 일정 — mock의 날짜 간격을 오늘 기준 상대 배치로 이식
-  const ev = (offset: number, h: number, m: number, title: string, type: string) =>
-    q("INSERT INTO calendar_events (title, type, start_at) VALUES ($1,$2,$3)", [title, type, day(offset, h, m)]);
-  await ev(-2, 11, 0, "독서실 자습", "sched");
+  // 이번 달 일정 — mock의 날짜 간격을 오늘 기준 상대 배치로 이식.
+  // durMin: 지속형(수업 등) 이벤트의 길이(분). 마감형(hw)은 종료 없음 = NULL (spec 007)
+  const ev = (offset: number, h: number, m: number, title: string, type: string, durMin?: number) => {
+    const start = day(offset, h, m);
+    const end = durMin ? new Date(start.getTime() + durMin * 60_000) : null;
+    return q("INSERT INTO calendar_events (title, type, start_at, end_at) VALUES ($1,$2,$3,$4)", [
+      title, type, start, end,
+    ]);
+  };
+  await ev(-2, 11, 0, "독서실 자습", "sched", 180);
   await ev(-1, 23, 59, "수학 학원 과제 마감", "hw");
-  await ev(0, 16, 0, "수학 학원 수업", "sched");
+  await ev(0, 16, 0, "수학 학원 수업", "sched", 150);
   await ev(0, 18, 0, "수학 학원 숙제 제출", "hw");
   await ev(1, 9, 0, "통합과학 수행평가", "hw");
-  await ev(2, 15, 30, "학교 방과후 수업", "sched");
-  await ev(4, 14, 0, "영어 학원", "sched");
+  await ev(2, 15, 30, "학교 방과후 수업", "sched", 90);
+  await ev(4, 14, 0, "영어 학원", "sched", 180);
   await ev(4, 23, 59, "국어 독서록 마감", "hw");
   await ev(8, 23, 59, "영어 단어 시험 범위", "hw");
-  await ev(11, 10, 0, "전국 모의고사", "sched");
+  await ev(11, 10, 0, "전국 모의고사", "sched", 420);
 
   await q(`INSERT INTO memos (folder, color, text, done) VALUES
     ('수학','#fef9c3',E'미적분 극한 공식 정리\\n좌극한 / 우극한 반드시 확인!',false),

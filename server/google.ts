@@ -11,6 +11,7 @@ interface GcalEvent {
   id: string;
   title: string;
   startAt: string;
+  endAt: string | null;
   source: "google-family" | "google-student";
 }
 
@@ -132,12 +133,19 @@ async function listCalendar(
   const res = await gapi(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
   if (!res.ok) throw new Error(`list ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as {
-    items?: Array<{ id: string; summary?: string; start?: { dateTime?: string; date?: string } }>;
+    items?: Array<{
+      id: string;
+      summary?: string;
+      start?: { dateTime?: string; date?: string };
+      end?: { dateTime?: string };
+    }>;
   };
   return (json.items ?? []).map((it) => ({
     id: `g-${it.id}`,
     title: (source === "google-family" ? `[${FAMILY_LABEL}] ` : "") + (it.summary ?? "(제목 없음)"),
     startAt: it.start?.dateTime ?? (it.start?.date ? `${it.start.date}T00:00:00+09:00` : ""),
+    // 종일 이벤트(end.date)는 종료 시각 없음 취급 — UI에서 시점성 이벤트로 표시 (spec 007)
+    endAt: it.end?.dateTime ?? null,
     source,
   }));
 }

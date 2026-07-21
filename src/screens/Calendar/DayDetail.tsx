@@ -6,7 +6,6 @@ import { useAppStore } from "../../store/useAppStore";
 function detailItems(events: Record<number, DayEvent[]>, day: number) {
   return (events[day] ?? []).map((e) => ({
     ...e,
-    color: e.type === "hw" ? "#f97316" : "#3b82f6",
     typeLabel: e.type === "hw" ? "숙제 마감" : "일정",
   }));
 }
@@ -34,6 +33,7 @@ function DetailList({ items }: { items: ReturnType<typeof detailItems> }) {
             <div className="text-sm font-bold text-slate-800">{si.title}</div>
             <div className="mt-0.5 text-[11px] font-bold" style={{ color: si.color }}>
               {si.typeLabel}
+              {si.endTime ? ` · ~${si.endTime}` : ""}
             </div>
           </div>
         </div>
